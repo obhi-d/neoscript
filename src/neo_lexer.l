@@ -1,22 +1,24 @@
 %option reentrant
 %option noyywrap
-%option prefix="neo_"
+%option prefix=""
 %option never-interactive
 %{
 #include <cstdint>
-#include <ParserContext.h>
+#include <string>
+#include <string_view>
+#include <neo_context.hpp>
 #include <parse.neo.hpp>
 #define YY_NO_UNISTD_H
-#define YY_EXTRA_TYPE lumiere::ParserContext*
+#define YY_EXTRA_TYPE neo::context*
 #define YY_INPUT(buf,result,max_size)       \
-	result = yyextra->Read(buf, max_size);	\
-	L_ASSERT(result <= max_size);			\
-	L_ASSERT(buf[result] == 0);				\
+	result = yyextra->read(buf, max_size);	\
+	assert(result <= max_size);			\
+	assert(buf[result] == 0);				\
 
-#define yyterminate() return lumiere::neo_parser_impl::make_END(b.Loc())
-#define YY_USER_ACTION                     b.Loc().Columns((lumiere::uint32)yyleng);
-void * neo_alloc (size_t bytes, void * yyscanner);
-void * neo_realloc (void * ptr, size_t bytes, void * yyscanner);
+#define yyterminate() return neo::parser_impl::make_END(_.loc())
+#define YY_USER_ACTION                     _.loc().columns((std::uint32_t)yyleng);
+void * neo_alloc (std::size_t bytes, void * yyscanner);
+void * neo_realloc (void * ptr, std::size_t bytes, void * yyscanner);
 void   neo_free (void * ptr, void * yyscanner);
 %}
 
@@ -30,21 +32,21 @@ BLANK   [ \t]
 
 <STATE_TEXT>{
 
-\\\[ 		 	b.PutContent('[');
-\\\{ 		 	b.PutContent('{');
+\\\[ 		 	_.put('[');
+\\\{ 		 	_.put('{');
 ^\{\{        {
 	BEGIN(STATE_REGION); 
-	lumiere::String content = b.GetContent(); 
-	b.StartContent(); 
-	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(content, b.Loc()); 
+	std::string content = _.get(); 
+	_.start(); 
+	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(content, _.loc()); 
 }
 
-[^\\\[\n\{]+       b.PutContent(yytext);
-\\[^\[\{]+			 b.PutContent(yytext);
+[^\\\[\n\{]+       _.put(yytext);
+\\[^\[\{]+			 _.put(yytext);
 
 <<EOF>>  {
 	BEGIN(INITIAL); 
-	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(b.GetContent(), b.Loc()); 
+	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(_.get(), _.loc()); 
 }
 
 }
@@ -53,79 +55,79 @@ BLANK   [ \t]
 <STATE_STR>{
 \"     			{
 	BEGIN(STATE_CONTENT);  
-	return lumiere::neo_parser_impl::make_STRING_LITERAL(b.GetContent(), b.Loc());
+	return lumiere::neo_parser_impl::make_STRING_LITERAL(_.get(), _.loc());
 }
 \\[0-7]{1,3}  {  
 	int result;  
 	std::sscanf( yytext + 1, "%o", &result);  
 	if ( result > 0xff )	  
-		b.PutContent(result); 
+		_.put(result); 
 }
 
 \\[0-9]+     			b.ParseError(lumiere::ParserContext::BAD_ESCAPE_SEQ);
-\\n  					b.PutContent('\n');
-\\t  					b.PutContent('\t');
-\\r  					b.PutContent('\r');
-\\b  					b.PutContent('\b');
-\\f  					b.PutContent('\f');
-\\(.|\n)  		b.PutContent(yytext[1]);
-[^\\\n\"]+   	b.PutContent(yytext);
+\\n  					_.put('\n');
+\\t  					_.put('\t');
+\\r  					_.put('\r');
+\\b  					_.put('\b');
+\\f  					_.put('\f');
+\\(.|\n)  		_.put(yytext[1]);
+[^\\\n\"]+   	_.put(yytext);
 }
 
 <INITIAL,STATE_CONTENT>{
-^\{\{          BEGIN(STATE_REGION); b.StartContent();
+^\{\{          BEGIN(STATE_REGION); _.start();
 "/*"           BEGIN(STATE_COMMENT);
 "//"           BEGIN(STATE_SINGLE_LINE_COMMENT);
-"{"            return lumiere::neo_parser_impl::make_LBRACKET(b.Loc());
-"}"            return lumiere::neo_parser_impl::make_RBRACKET(b.Loc());
-"template"	   return lumiere::neo_parser_impl::make_TEMPLATE(b.Loc());
-"instance"	   return lumiere::neo_parser_impl::make_INSTANCE(b.Loc());
-"import"	   return lumiere::neo_parser_impl::make_IMPORT(b.Loc());
-"<"			   return lumiere::neo_parser_impl::make_LABRACKET(b.Loc());
-">"			   return lumiere::neo_parser_impl::make_RABRACKET(b.Loc());
-"["            return lumiere::neo_parser_impl::make_LSQBRACKET(b.Loc());
-"]"            return lumiere::neo_parser_impl::make_RSQBRACKET(b.Loc());
-","            return lumiere::neo_parser_impl::make_COMMA(b.Loc());
-";"            return lumiere::neo_parser_impl::make_SEMICOLON(b.Loc());
-"("            return lumiere::neo_parser_impl::make_LBRACES(b.Loc());
-")"            return lumiere::neo_parser_impl::make_RBRACES(b.Loc());
-"="            return lumiere::neo_parser_impl::make_ASSIGN(b.Loc());
-\"             BEGIN(STATE_STR);  b.StartContent();
-[\n]+  		  	b.Loc().Lines((lumiere::uint32)yyleng); b.Loc().Step();
-{BLANK}+   	   b.Loc().Step();
-[^ \<\>\"\{\}\[\],;()\t\n\r=]+    return lumiere::neo_parser_impl::make_IDENTIFIER(yytext, b.Loc());
+"{"            return lumiere::neo_parser_impl::make_LBRACKET(_.loc());
+"}"            return lumiere::neo_parser_impl::make_RBRACKET(_.loc());
+"template"	   return lumiere::neo_parser_impl::make_TEMPLATE(_.loc());
+"instance"	   return lumiere::neo_parser_impl::make_INSTANCE(_.loc());
+"import"	   return lumiere::neo_parser_impl::make_IMPORT(_.loc());
+"<"			   return lumiere::neo_parser_impl::make_LABRACKET(_.loc());
+">"			   return lumiere::neo_parser_impl::make_RABRACKET(_.loc());
+"["            return lumiere::neo_parser_impl::make_LSQBRACKET(_.loc());
+"]"            return lumiere::neo_parser_impl::make_RSQBRACKET(_.loc());
+","            return lumiere::neo_parser_impl::make_COMMA(_.loc());
+";"            return lumiere::neo_parser_impl::make_SEMICOLON(_.loc());
+"("            return lumiere::neo_parser_impl::make_LBRACES(_.loc());
+")"            return lumiere::neo_parser_impl::make_RBRACES(_.loc());
+"="            return lumiere::neo_parser_impl::make_ASSIGN(_.loc());
+\"             BEGIN(STATE_STR);  _.start();
+[\n]+  		  	_.loc().Lines((lumiere::uint32)yyleng); _.loc().Step();
+{BLANK}+   	   _.loc().Step();
+[^ \<\>\"\{\}\[\],;()\t\n\r=]+    return lumiere::neo_parser_impl::make_IDENTIFIER(yytext, _.loc());
 
 }
 
 <STATE_REGION>{
-{BLANK}+   	b.Loc().Step();
-{REGND}		b.PutContent(yytext);
+{BLANK}+   	_.loc().Step();
+{REGND}		_.put(yytext);
 ":"			{ 				
-				if (b.GetContent() == "code")
+				if (_.get() == "code")
 					BEGIN(STATE_REGION_CODE); 
 				else 
 					BEGIN(STATE_REGION_TEXT);
-				b.PutContent(':');
+				_.put(':');
 			}
 }
 
 <STATE_REGION_TEXT,STATE_REGION_CODE>{
 
 {REG} {
-	b.PutContent(yytext);
+	_.put(yytext);
 }
 
-{BLANK}+  b.Loc().Step();
+{BLANK}+  _.loc().Step();
 
 \}\}  {
-	lumiere::String value = b.GetContent();
-	b.StartContent();
+	lumiere::String value = _.get();
+	_.start();
 	if (YY_START == STATE_REGION_CODE) {
 		BEGIN(STATE_CONTENT);
-		return lumiere::neo_parser_impl::make_REGION_ID(value, b.Loc());
+		return lumiere::neo_parser_impl::make_REGION_ID(value, _.loc());
 	} else {
 		BEGIN(STATE_TEXT);
-		return lumiere::neo_parser_impl::make_TEXT_REGION_ID(value, b.Loc());
+		return lumiere::neo_parser_impl::make_TEXT_REGION_ID(value, _.loc());
 	}
 }
 
@@ -134,22 +136,22 @@ BLANK   [ \t]
 
 <STATE_SINGLE_LINE_COMMENT>{
 [^\n]+		// eat comment in chunks
-\n		      b.Loc().Lines((lumiere::uint32)1); BEGIN(STATE_CONTENT);
+\n		      _.loc().Lines((lumiere::uint32)1); BEGIN(STATE_CONTENT);
 }
 
 <STATE_COMMENT>{
 "*/" 			BEGIN(STATE_CONTENT);
 [^*\n]+		// eat comment in chunks
 \*          // eat it up
-\n		      b.Loc().Lines((lumiere::uint32)1);
+\n		      _.loc().Lines((lumiere::uint32)1);
 }
 
 <STATE_TEXT,STATE_STR>\n      {
   // no error, just increase the line number
   // @todo
-  b.Loc().Lines((lumiere::uint32)yyleng);
-  b.Loc().Step();
-  b.PutContent('\n');
+  _.loc().Lines((lumiere::uint32)yyleng);
+  _.loc().Step();
+  _.put('\n');
 }
 
 %%
