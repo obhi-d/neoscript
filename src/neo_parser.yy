@@ -3,8 +3,8 @@
 %name-prefix "neo_"
 
 %defines
-%define parser_class_name {neo_parser_impl}
-%define api.namespace {lumiere}
+%define parser_class_name {parser_impl}
+%define api.namespace {neo}
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
@@ -65,7 +65,7 @@ YY_DECL;
 	RBRACES    ")"
 	ASSIGN     "="
 	TEMPLATE   "template"
-	INSTANCE   "instance"
+	INVOKE     "invoke"
 	IMPORT	   "import"
 	;
 
