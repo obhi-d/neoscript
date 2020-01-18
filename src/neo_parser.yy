@@ -3,8 +3,8 @@
 %name-prefix "neo_"
 
 %defines
-%define parser_class_name {neo_parser_impl}
-%define api.namespace {lumiere}
+%define parser_class_name {parser_impl}
+%define api.namespace {neo}
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
@@ -14,7 +14,7 @@
 %code requires
 {
 #include <NeoBaseDecl.h>
-#include <ParseLocation.h>
+#include <location.h>
 #include <ASTValue.h>
 #include <ASTDocument.h>
 #include <ASTCommand.h>
@@ -24,30 +24,30 @@
 #include <ASTBlockRegion.h>
 #include <ASTTemplate.h>
 #include <ASTInstance.h>
-namespace lumiere {
-  class ParseLocation;
-  class ParserContext;
+namespace neo {
+  class location;
+  class context;
 }
 #ifndef YY_NULLPTR
 #  define YY_NULLPTR nullptr
 #endif
-#define YY_DECL extern lumiere::neo_parser_impl::symbol_type neo_lex(lumiere::ParserContext& b, void* yyscanner)
+#define YY_DECL extern neo::parser_impl::symbol_type neo_lex(neo::context& _, void* yyscanner)
 
 }
 
-%define api.location.type {lumiere::ParseLocation}
-%param { ParserContext& b }
+%define api.location.type {neo::location}
+%param { context& _ }
 %lex-param { void* SCANNER_PARAM  }
 %locations
 %initial-action
 {
-  @$.begin.sourceName = @$.end.sourceName = &b.GetFileName();
+  @$.begin.source_name = @$.end.source_name = &_.get_file_name();
 }
 
 %code
 {
-#include "ParserContext.h"
-#define SCANNER_PARAM b.scanner
+#include "context.h"
+#define SCANNER_PARAM _.scanner
 YY_DECL;
 }
 
@@ -69,7 +69,7 @@ YY_DECL;
 	IMPORT	   "import"
 	;
 
-%token <String> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
+%token <std::string> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
 
 // Types
 %type <ASTDocumentPtr> script  named_regions.1.N
@@ -77,9 +77,9 @@ YY_DECL;
 %type <ASTNodeList> commands.0.N commands.1.N top.commands.0.N top.commands.1.N
 %type <ASTParameter> parameters.0.N 
 %type <ASTValuePtr> special_parameter special_parameters.0.N  parameter list.0.N list
-%type <std::vector<String>> template_args.0.N
+%type <std::vector<std::string>> template_args.0.N
 %type <ASTTemplatePtr> templatedecl
-%printer { yyoutput << $$; } <String>
+%printer { yyoutput << $$; } <std::string>
 
 %start script
 
@@ -87,24 +87,24 @@ YY_DECL;
 /*============================================================================*/
 script:                                  { $$.reset(); }
 		| named_regions.1.N                { $$ = $1; }
-		| unnamed_region                   { $$ = b.MakeDocument($1); }
+		| unnamed_region                   { $$ = _.MakeDocument($1); }
 		| unnamed_region named_regions.1.N { $2->PushFront($1); $$ = $2; }
 		;
 
-named_regions.1.N: named_region             { $$ = b.MakeDocument($1); }
+named_regions.1.N: named_region             { $$ = _.MakeDocument($1); }
 					| named_regions.1.N named_region { $1->PushBack($2); $$ = $1; }
 					;
 
-unnamed_region: top.commands.1.N          { $$ = b.MakeBlockRegion("", std::move($1)); }
+unnamed_region: top.commands.1.N          { $$ = _.MakeBlockRegion("", std::move($1)); }
 				;
 
-named_region: REGION_ID top.commands.0.N  { $$ = b.MakeBlockRegion($1, std::move($2)); }
-				| TEXT_REGION_ID TEXT_CONTENTS  { $$ = b.MakeTextRegion($1, std::move($2)); }
+named_region: REGION_ID top.commands.0.N  { $$ = _.MakeBlockRegion($1, std::move($2)); }
+				| TEXT_REGION_ID TEXT_CONTENTS  { $$ = _.MakeTextRegion($1, std::move($2)); }
 				;
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 
-						std::vector<String> args; 
+						std::vector<std::string> args; 
 						args.push_back($1); 
 						$$ = std::move(args); 
 					}
@@ -116,11 +116,11 @@ template_args.0.N:			{}
 
 templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET command {
 								$$ = std::static_pointer_cast<ASTTemplate>(
-									b.MakeTemplate($5->GetValue(), $3, 
+									_.MakeTemplate($5->GetValue(), $3, 
 										std::static_pointer_cast<ASTCommand>($5)));
 							}
 			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET command {									$$ = std::static_pointer_cast<ASTTemplate>(
-									b.MakeTemplate($2, $4, 
+									_.MakeTemplate($2, $4, 
 										std::static_pointer_cast<ASTCommand>($6)));
 							}
 				;
@@ -129,16 +129,16 @@ top.commands.0.N:                         {  }
 				| top.commands.1.N        { $$ = std::move($1); }
 				;
 
-import: IMPORT IDENTIFIER SEMICOLON		{ $$ = b.Import($2); }
-		| IMPORT STRING_LITERAL SEMICOLON		{ $$ = b.Import($2); }
+import: IMPORT IDENTIFIER SEMICOLON		{ $$ = _.Import($2); }
+		| IMPORT STRING_LITERAL SEMICOLON		{ $$ = _.Import($2); }
 		;
 
 instance: INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON {
-				$$ = b.MakeInstance($2, 
+				$$ = _.MakeInstance($2, 
 							std::static_pointer_cast<ASTList>($4));
 			}
 		| INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET commands.0.N RBRACKET {
-				$$ = b.MakeInstance($2, 
+				$$ = _.MakeInstance($2, 
 						std::static_pointer_cast<ASTList>($4), std::move($7));
 			}
 
@@ -168,11 +168,11 @@ commands.1.N:	command                 { if ($1) $$.push_back($1); }
 				;
 
 command: SEMICOLON                          { $$.reset(); }
-		 | IDENTIFIER parameters.0.N SEMICOLON   { $$ = b.MakeCommand($1, std::move($2)); }
+		 | IDENTIFIER parameters.0.N SEMICOLON   { $$ = _.MakeCommand($1, std::move($2)); }
 		 | IDENTIFIER parameters.0.N LBRACKET commands.0.N RBRACKET
 		 {
 			 /* returns $4 if its not null with appropriate stuff */
-			 $$ = b.MakeBlock($1, std::move($2), std::move($4));
+			 $$ = _.MakeBlock($1, std::move($2), std::move($4));
 		 }
 		 ;
 
@@ -238,17 +238,17 @@ list.0.N:								{ }
 %%
 /*============================================================================*/
 
-namespace lumiere {
+namespace neo {
 
-void neo_parser_impl::error(const location_type& l,
+void parser_impl::error(const location_type& l,
 												  const std::string& e) {
-  b.ParseError(l, e.c_str());
+  _.ParseError(l, e.c_str());
   L_THROW_CompilationFailed();
 }
 
-ASTDocumentPtr ParserContext::Parse() {
+ASTDocumentPtr context::Parse() {
 	BeginScan();
-	neo_parser_impl parser(*this);
+	parser_impl parser(*this);
 	parser.set_debug_level(traceParsing);
 	int res = parser.parse();
 	EndScan();
