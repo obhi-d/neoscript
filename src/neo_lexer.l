@@ -1,6 +1,6 @@
 %option reentrant
 %option noyywrap
-%option prefix=""
+%option prefix="neo_"
 %option never-interactive
 %{
 #include <cstdint>
@@ -12,7 +12,7 @@
 #define YY_EXTRA_TYPE neo::context*
 #define YY_INPUT(buf,result,max_size)       \
 	result = yyextra->read(buf, max_size);	\
-	assert(result <= max_size);			\
+	assert(result <= max_size);			    \
 	assert(buf[result] == 0);				\
 
 #define yyterminate() return neo::parser_impl::make_END(_.loc())
@@ -38,7 +38,7 @@ BLANK   [ \t]
 	BEGIN(STATE_REGION); 
 	std::string content = _.get(); 
 	_.start(); 
-	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(content, _.loc()); 
+	return neo::parser_impl::make_TEXT_CONTENTS(content, _.loc()); 
 }
 
 [^\\\[\n\{]+       _.put(yytext);
@@ -46,7 +46,7 @@ BLANK   [ \t]
 
 <<EOF>>  {
 	BEGIN(INITIAL); 
-	return lumiere::neo_parser_impl::make_TEXT_CONTENTS(_.get(), _.loc()); 
+	return neo::parser_impl::make_TEXT_CONTENTS(_.get(), _.loc()); 
 }
 
 }
@@ -55,7 +55,7 @@ BLANK   [ \t]
 <STATE_STR>{
 \"     			{
 	BEGIN(STATE_CONTENT);  
-	return lumiere::neo_parser_impl::make_STRING_LITERAL(_.get(), _.loc());
+	return neo::parser_impl::make_STRING_LITERAL(_.get(), _.loc());
 }
 \\[0-7]{1,3}  {  
 	int result;  
@@ -64,7 +64,7 @@ BLANK   [ \t]
 		_.put(result); 
 }
 
-\\[0-9]+     			b.ParseError(lumiere::ParserContext::BAD_ESCAPE_SEQ);
+\\[0-9]+     			_.parse_error(neo::context::BAD_ESCAPE_SEQ);
 \\n  					_.put('\n');
 \\t  					_.put('\t');
 \\r  					_.put('\r');
@@ -78,29 +78,29 @@ BLANK   [ \t]
 ^\{\{          BEGIN(STATE_REGION); _.start();
 "/*"           BEGIN(STATE_COMMENT);
 "//"           BEGIN(STATE_SINGLE_LINE_COMMENT);
-"{"            return lumiere::neo_parser_impl::make_LBRACKET(_.loc());
-"}"            return lumiere::neo_parser_impl::make_RBRACKET(_.loc());
-"template"	   return lumiere::neo_parser_impl::make_TEMPLATE(_.loc());
-"instance"	   return lumiere::neo_parser_impl::make_INSTANCE(_.loc());
-"import"	   return lumiere::neo_parser_impl::make_IMPORT(_.loc());
-"<"			   return lumiere::neo_parser_impl::make_LABRACKET(_.loc());
-">"			   return lumiere::neo_parser_impl::make_RABRACKET(_.loc());
-"["            return lumiere::neo_parser_impl::make_LSQBRACKET(_.loc());
-"]"            return lumiere::neo_parser_impl::make_RSQBRACKET(_.loc());
-","            return lumiere::neo_parser_impl::make_COMMA(_.loc());
-";"            return lumiere::neo_parser_impl::make_SEMICOLON(_.loc());
-"("            return lumiere::neo_parser_impl::make_LBRACES(_.loc());
-")"            return lumiere::neo_parser_impl::make_RBRACES(_.loc());
-"="            return lumiere::neo_parser_impl::make_ASSIGN(_.loc());
+"{"            return neo::parser_impl::make_LBRACKET(_.loc());
+"}"            return neo::parser_impl::make_RBRACKET(_.loc());
+"template"	   return neo::parser_impl::make_TEMPLATE(_.loc());
+"invoke"	   return neo::parser_impl::make_INSTANCE(_.loc());
+"import"	   return neo::parser_impl::make_INVOKE(_.loc());
+"<"			   return neo::parser_impl::make_LABRACKET(_.loc());
+">"			   return neo::parser_impl::make_RABRACKET(_.loc());
+"["            return neo::parser_impl::make_LSQBRACKET(_.loc());
+"]"            return neo::parser_impl::make_RSQBRACKET(_.loc());
+","            return neo::parser_impl::make_COMMA(_.loc());
+";"            return neo::parser_impl::make_SEMICOLON(_.loc());
+"("            return neo::parser_impl::make_LBRACES(_.loc());
+")"            return neo::parser_impl::make_RBRACES(_.loc());
+"="            return neo::parser_impl::make_ASSIGN(_.loc());
 \"             BEGIN(STATE_STR);  _.start();
-[\n]+  		  	_.loc().Lines((lumiere::uint32)yyleng); _.loc().Step();
-{BLANK}+   	   _.loc().Step();
-[^ \<\>\"\{\}\[\],;()\t\n\r=]+    return lumiere::neo_parser_impl::make_IDENTIFIER(yytext, _.loc());
+[\n]+  		  	_.loc().lines((std::uint32_t)yyleng); _.loc().step();
+{BLANK}+   	   _.loc().step();
+[^ \<\>\"\{\}\[\],;()\t\n\r=]+    return neo::parser_impl::make_IDENTIFIER(yytext, _.loc());
 
 }
 
 <STATE_REGION>{
-{BLANK}+   	_.loc().Step();
+{BLANK}+   	_.loc().step();
 {REGND}		_.put(yytext);
 ":"			{ 				
 				if (_.get() == "code")
@@ -117,17 +117,17 @@ BLANK   [ \t]
 	_.put(yytext);
 }
 
-{BLANK}+  _.loc().Step();
+{BLANK}+  _.loc().step();
 
 \}\}  {
-	lumiere::String value = _.get();
+	std::string value = _.get();
 	_.start();
 	if (YY_START == STATE_REGION_CODE) {
 		BEGIN(STATE_CONTENT);
-		return lumiere::neo_parser_impl::make_REGION_ID(value, _.loc());
+		return neo::parser_impl::make_REGION_ID(value, _.loc());
 	} else {
 		BEGIN(STATE_TEXT);
-		return lumiere::neo_parser_impl::make_TEXT_REGION_ID(value, _.loc());
+		return neo::parser_impl::make_TEXT_REGION_ID(value, _.loc());
 	}
 }
 
@@ -136,34 +136,34 @@ BLANK   [ \t]
 
 <STATE_SINGLE_LINE_COMMENT>{
 [^\n]+		// eat comment in chunks
-\n		      _.loc().Lines((lumiere::uint32)1); BEGIN(STATE_CONTENT);
+\n		      _.loc().lines((std::uint32_t)1); BEGIN(STATE_CONTENT);
 }
 
 <STATE_COMMENT>{
 "*/" 			BEGIN(STATE_CONTENT);
 [^*\n]+		// eat comment in chunks
 \*          // eat it up
-\n		      _.loc().Lines((lumiere::uint32)1);
+\n		      _.loc().lines((std::uint32_t)1);
 }
 
 <STATE_TEXT,STATE_STR>\n      {
   // no error, just increase the line number
   // @todo
-  _.loc().Lines((lumiere::uint32)yyleng);
-  _.loc().Step();
+  _.loc().lines((std::uint32_t)yyleng);
+  _.loc().step();
   _.put('\n');
 }
 
 %%
 
-namespace lumiere {
+namespace neo {
 
-void ParserContext::BeginScan() {
+void context::begin_scan() {
   neo_lex_init_extra(this, &scanner);
-  neo_set_debug(traceScanning, scanner);
+  neo_set_debug(trace_scanning, scanner);
 }
 
-void ParserContext::EndScan() {
+void context::end_scan() {
   neo_lex_destroy(scanner);
 }
 

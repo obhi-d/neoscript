@@ -65,7 +65,7 @@ YY_DECL;
 	RBRACES    ")"
 	ASSIGN     "="
 	TEMPLATE   "template"
-	INSTANCE   "instance"
+	INVOKE     "invoke"
 	IMPORT	   "import"
 	;
 
