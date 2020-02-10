@@ -13,17 +13,6 @@
 
 %code requires
 {
-#include <NeoBaseDecl.h>
-#include <location.h>
-#include <ASTValue.h>
-#include <ASTDocument.h>
-#include <ASTCommand.h>
-#include <ASTTextRegion.h>
-#include <ASTVisitor.h>
-#include <ASTBlock.h>
-#include <ASTBlockRegion.h>
-#include <ASTTemplate.h>
-#include <ASTInstance.h>
 namespace neo {
   class location;
   class context;
@@ -41,12 +30,12 @@ namespace neo {
 %locations
 %initial-action
 {
-  @$.begin.source_name = @$.end.source_name = &_.get_file_name();
+  @$.begin.source_name = @$.end.source_name = _.get_file_name();
 }
 
 %code
 {
-#include "context.h"
+#include "neo_context.hpp"
 #define SCANNER_PARAM _.scanner
 YY_DECL;
 }
@@ -72,35 +61,27 @@ YY_DECL;
 %token <std::string> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
 
 // Types
-%type <ASTDocumentPtr> script  named_regions.1.N
-%type <ASTNodePtr> import named_region unnamed_region command instance
-%type <ASTNodeList> commands.0.N commands.1.N top.commands.0.N top.commands.1.N
-%type <ASTParameter> parameters.0.N 
-%type <ASTValuePtr> special_parameter special_parameters.0.N  parameter list.0.N list
+%type <script> script
+%type <command> commanddecl
+%type <command_instance> instancedecl
+%type <command::parameters> parameters.0.N 
+%type <command::value_ptr> special_parameter special_parameters.0.N  parameter list.0.N list
 %type <std::vector<std::string>> template_args.0.N
-%type <ASTTemplatePtr> templatedecl
+%type <command_template> templatedecl
 %printer { yyoutput << $$; } <std::string>
 
 %start script
 
 %%
 /*============================================================================*/
-script:                                  { $$.reset(); }
-		| named_regions.1.N                { $$ = $1; }
-		| unnamed_region                   { $$ = _.MakeDocument($1); }
-		| unnamed_region named_regions.1.N { $2->PushFront($1); $$ = $2; }
-		;
-
-named_regions.1.N: named_region             { $$ = _.MakeDocument($1); }
-					| named_regions.1.N named_region { $1->PushBack($2); $$ = $1; }
-					;
-
-unnamed_region: top.commands.1.N          { $$ = _.MakeBlockRegion("", std::move($1)); }
-				;
-
-named_region: REGION_ID top.commands.0.N  { $$ = _.MakeBlockRegion($1, std::move($2)); }
-				| TEXT_REGION_ID TEXT_CONTENTS  { $$ = _.MakeTextRegion($1, std::move($2)); }
-				;
+script:                                      {                                                         }
+		| REGION_ID script                       { _.start_region(std::move($1));                          }
+		| commanddecl script                     { _.consume(std::move($1));                               }
+		| templatedecl script                    { _.consume(std::move($1));                               }
+		| instancedecl script                    { _.consume(std::move($1));                               }
+		| RBRACKET script                        { _.end_block();                                          }
+		| TEXT_REGION_ID TEXT_CONTENTS script    { _.start_region(std::move($1), std::move($2));           }
+		| IMPORT IDENTIFIER SEMICOLON script     { _.import(std::move($1));                                }
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 
@@ -114,147 +95,98 @@ template_args.0.N:			{}
 					}
 					;
 
-templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET command {
-								$$ = std::static_pointer_cast<ASTTemplate>(
-									_.MakeTemplate($5->GetValue(), $3, 
-										std::static_pointer_cast<ASTCommand>($5)));
-							}
-			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET command {									$$ = std::static_pointer_cast<ASTTemplate>(
-									_.MakeTemplate($2, $4, 
-										std::static_pointer_cast<ASTCommand>($6)));
-							}
+templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
+								$$ = _.make_command_template(
+											std::move($3), std::move($5));
+						 }
+			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET commanddecl {
+				 				$$ = _.make_command_template(std::move($2),
+							        std::move($3), std::move($5));
+				     }
 				;
 
-top.commands.0.N:                         {  }
-				| top.commands.1.N        { $$ = std::move($1); }
-				;
-
-import: IMPORT IDENTIFIER SEMICOLON		{ $$ = _.Import($2); }
-		| IMPORT STRING_LITERAL SEMICOLON		{ $$ = _.Import($2); }
-		;
-
-instance: INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON {
-				$$ = _.MakeInstance($2, 
-							std::static_pointer_cast<ASTList>($4));
-			}
-		| INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET commands.0.N RBRACKET {
-				$$ = _.MakeInstance($2, 
-						std::static_pointer_cast<ASTList>($4), std::move($7));
-			}
-
-top.commands.1.N:	import		{ if($1) $$.push_back($1); }
-				|   commands.1.N		{
-					$$ = std::move($1);
-				}
-				|	top.commands.1.N commands.1.N        { 
-						$$ = std::move($1); 
-						std::move(std::begin($2), std::end($2), std::back_inserter($$)); 
-					}
-				|  top.commands.1.N import	{ 
-						$$ = std::move($1); 
-						$$.push_back($2); 
-				}
-				;
-
-commands.0.N:                         {  }
-				| commands.1.N        { $$ = std::move($1); }
-				;
-
-commands.1.N:	command                 { if ($1) $$.push_back($1); }
-				| templatedecl			{ $$.push_back($1); }
-				| commands.1.N instance { $1.push_back($2); $$=std::move($1); }
-				| commands.1.N command    { if ($2) $1.push_back($2); $$ = std::move($1); }
-				| commands.1.N templatedecl  { $1.push_back($2); $$ = std::move($1); }
-				;
-
-command: SEMICOLON                          { $$.reset(); }
-		 | IDENTIFIER parameters.0.N SEMICOLON   { $$ = _.MakeCommand($1, std::move($2)); }
-		 | IDENTIFIER parameters.0.N LBRACKET commands.0.N RBRACKET
-		 {
-			 /* returns $4 if its not null with appropriate stuff */
-			 $$ = _.MakeBlock($1, std::move($2), std::move($4));
-		 }
-		 ;
+commanddecl: SEMICOLON                          {  }
+		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = _.make_command(std::move($1), std::move($2)); }
+		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = _.make_command(std::move($1), std::move($2), true); }
+		 
+instancedecl: INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
+		 | INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
 
 parameters.0.N:                           { }
-				  | parameters.0.N parameter  { $1.Append(std::move($2)); $$ = std::move($1); }
+				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }
 				  | parameters.0.N LBRACES special_parameters.0.N RBRACES { 
-							$1.AppendExpanded(std::move($3)); $$ = std::move($1); 
+							$1.append_expanded(std::move($3)); $$ = std::move($1); 
 						}
 				  ;
 
 special_parameters.0.N:            {  }
 			| special_parameter       { 
-					ASTListPtr l = std::make_shared<ASTList>(); 
-					l->values.emplace_back(std::move($1)); 
+					auto l = std::make_unique<command::list>(); 
+					l->emplace_back(std::move($1)); 
 					$$ = std::move(l); 
 				}
 			| special_parameters.0.N COMMA special_parameter 
 			{ 
-				ASTListPtr list;
-				if (static_cast<ASTList*>($1.get()) == nullptr) 
-					list = std::make_shared<ASTList>();
+				command::list_ptr list;
+				if (static_cast<command::list*>($1.get()) == nullptr) 
+					list = std::make_unique<command::list>();
 				else
-					list = std::static_pointer_cast<ASTList>($1);
-				list->values.emplace_back(std::move($3));
-				$$ = list;
+					list.reset(static_cast<command::list*>($1.release()));
+				list->emplace_back(std::move($3));
+				$$.reset(list.release());
 			}
 			;
 
 special_parameter: IDENTIFIER  ASSIGN  parameter 
 			{ 
-				$3->SetName($1); 
+				$3->set_name($1); 
 				$$ = std::move($3);	
 			}
 			;
 
-parameter: STRING_LITERAL						{ $$ = std::make_shared<ASTValue>(std::move($1)); }
-			| IDENTIFIER                        { $$ = std::make_shared<ASTValue>(std::move($1)); }
-			| LSQBRACKET list.0.N RSQBRACKET    { $$ = $2; }
+parameter: STRING_LITERAL						      { $$ = std::make_unique<command::single>(std::move($1)); }
+			| IDENTIFIER                        { $$ = std::make_unique<command::single>(std::move($1)); }
+			| LSQBRACKET list.0.N RSQBRACKET    { $$ = std::move($2); }
 			;
 			
-list: parameter					{ $$ = std::move($1); }
+list: parameter					  { $$ = std::move($1); }
 	| special_parameter			{ $$ = std::move($1); }
     ;
 	
 list.0.N:								{ }
 		|  list                         { 
-				ASTListPtr list;
-				list = std::make_shared<ASTList>(); 
-				list->values.emplace_back(std::move($1)); 
-				$$ = list;
+				auto list = std::make_unique<command::list>(); 
+				list->emplace_back(std::move($1)); 
+				$$.reset(list.release());
 			}
-	    |  list.0.N COMMA list          { 
-			ASTListPtr list;
-			if ($1.get() == nullptr)  
-				list = std::make_shared<ASTList>();
-			else
-				list = std::move(std::static_pointer_cast<ASTList>($1));
-			list->values.emplace_back(std::move($3));
-			$$ = list;
-		}
-	    ;
+	  |  list.0.N COMMA list          { 
+		    command::list_ptr list;
+				if (static_cast<command::list*>($1.get()) == nullptr) 
+					list = std::make_unique<command::list>();
+				else
+					list.reset(static_cast<command::list*>($1.release()));
+				list->emplace_back(std::move($3));
+				$$.reset(list.release());
+		  }
+	  ;
+
 
 %%
 /*============================================================================*/
 
 namespace neo {
 
-void parser_impl::error(const location_type& l,
-												  const std::string& e) {
-  _.ParseError(l, e.c_str());
-  L_THROW_CompilationFailed();
+void parser_impl::error(location_type const& l,
+												std::string const & e) {
+  _.push_error(l, e.c_str());
 }
 
-ASTDocumentPtr context::Parse() {
-	BeginScan();
+void context::parse() {
+	begin_scan();
 	parser_impl parser(*this);
-	parser.set_debug_level(traceParsing);
+	parser.set_debug_level(trace_parsing);
 	int res = parser.parse();
-	EndScan();
-	if (res)
-		return ASTDocumentPtr();
-	return document;
+	end_scan();
 }
 
 }

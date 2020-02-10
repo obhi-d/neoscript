@@ -8,6 +8,8 @@ namespace neo {
 
 /// Parameter Layout
 class command {
+public:
+
 	struct value {
 
 		virtual std::string_view name() const noexcept = 0;
@@ -16,7 +18,9 @@ class command {
 		virtual value const& at(std::uint32_t i) const noexcept = 0;
 		virtual value& at(std::uint32_t i) noexcept = 0;
 	};
-public:
+
+	using value_ptr = std::unique_ptr<value>;
+
 	class single : value {
 	public:
 		void set_name(std::string_view name) override {
@@ -46,6 +50,8 @@ public:
 		std::string name_;
 		std::string value_;
 	};
+
+	using single_ptr = std::unique_ptr<single>;
 
 	class list : value {
 	public:
@@ -84,23 +90,34 @@ public:
 		vector value_;
 	};
 
+	using list_ptr = std::unique_ptr<list>;
+
 public:
+
+	using parameters = list::vector;
+
+	command() = default;
+	command(std::string_view name, parameters&& params) : name_(name), params_(std::move(params)) {}
 
 	std::string_view name() const {
 		return name_;
 	}
 
-	list const& params() const {
+	list::vector const& params() const {
 		return params_;
 	}
 
-	list& params() {
+	list::vector& params() {
 		return params_;
+	}
+
+	operator bool() const {
+		return name.length() > 0;
 	}
 
 private:
 	std::string name_;
-	list params_;
+	parameters params_;
 };
 
 }

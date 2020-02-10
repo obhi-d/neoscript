@@ -15,7 +15,9 @@ set(NEOSCRIPT_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
 ## TARGET
 ##
 message("Target name: ${NEOSCRIPT_TARGET_NAME}")
-add_library(${NEOSCRIPT_TARGET_NAME} INTERFACE)
+add_library(${NEOSCRIPT_TARGET_NAME} STATIC 
+  src/neo_context.cpp
+)
 add_library(${PROJECT_NAME}::${NEOSCRIPT_TARGET_NAME} ALIAS ${NEOSCRIPT_TARGET_NAME})
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
