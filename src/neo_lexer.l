@@ -101,7 +101,7 @@ BLANK   [ \t]
 
 <STATE_REGION>{
 {BLANK}+   	_.loc().step();
-{REGND}		_.put(yytext);
+{REGND}		  _.put(yytext);
 ":"			{ 				
 				if (_.get() == "code")
 					BEGIN(STATE_REGION_CODE); 

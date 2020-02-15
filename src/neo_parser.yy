@@ -30,7 +30,7 @@ namespace neo {
 %locations
 %initial-action
 {
-  @$.begin.source_name = @$.end.source_name = _.get_file_name();
+  @$.source_name = _.get_file_name();
 }
 
 %code
@@ -65,7 +65,7 @@ YY_DECL;
 %type <command> commanddecl
 %type <command_instance> instancedecl
 %type <command::parameters> parameters.0.N 
-%type <command::value_ptr> special_parameter special_parameters.0.N  parameter list.0.N list
+%type <command::param_t> special_parameter special_parameters.0.N  parameter list.0.N list
 %type <std::vector<std::string>> template_args.0.N
 %type <command_template> templatedecl
 %printer { yyoutput << $$; } <std::string>
@@ -81,7 +81,7 @@ script:                                      {                                  
 		| instancedecl script                    { _.consume(std::move($1));                               }
 		| RBRACKET script                        { _.end_block();                                          }
 		| TEXT_REGION_ID TEXT_CONTENTS script    { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT IDENTIFIER SEMICOLON script     { _.import(std::move($1));                                }
+		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($1));                                }
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 
@@ -112,7 +112,7 @@ commanddecl: SEMICOLON                          {  }
 instancedecl: INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
 		 | INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
 
-parameters.0.N:                           { }
+parameters.0.N:                       { }
 				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }
 				  | parameters.0.N LBRACES special_parameters.0.N RBRACES { 
 							$1.append_expanded(std::move($3)); $$ = std::move($1); 
@@ -121,19 +121,20 @@ parameters.0.N:                           { }
 
 special_parameters.0.N:            {  }
 			| special_parameter       { 
-					auto l = std::make_unique<command::list>(); 
-					l->emplace_back(std::move($1)); 
+					command::list l; 
+					l.emplace_back(std::move($1)); 
 					$$ = std::move(l); 
 				}
 			| special_parameters.0.N COMMA special_parameter 
 			{ 
-				command::list_ptr list;
-				if (static_cast<command::list*>($1.get()) == nullptr) 
-					list = std::make_unique<command::list>();
-				else
-					list.reset(static_cast<command::list*>($1.release()));
-				list->emplace_back(std::move($3));
-				$$.reset(list.release());
+				command::list list;
+				if ($1.index() == 1) 
+					list.emplace_back(std::move($1));
+				else if ($1.index() == 2) 
+					list = std::get<command::list>(std::move($1)));
+
+				list.emplace_back(std::move($3));
+				$$ = std::move(list);
 			}
 			;
 
@@ -144,8 +145,8 @@ special_parameter: IDENTIFIER  ASSIGN  parameter
 			}
 			;
 
-parameter: STRING_LITERAL						      { $$ = std::make_unique<command::single>(std::move($1)); }
-			| IDENTIFIER                        { $$ = std::make_unique<command::single>(std::move($1)); }
+parameter: STRING_LITERAL						      { $$ = command::single(std::move($1)); }
+			| IDENTIFIER                        { $$ = command::single(std::move($1)); }
 			| LSQBRACKET list.0.N RSQBRACKET    { $$ = std::move($2); }
 			;
 			
@@ -155,18 +156,18 @@ list: parameter					  { $$ = std::move($1); }
 	
 list.0.N:								{ }
 		|  list                         { 
-				auto list = std::make_unique<command::list>(); 
-				list->emplace_back(std::move($1)); 
-				$$.reset(list.release());
+				command::list list; 
+				list.emplace_back(std::move($1)); 
+				$$ = std::move(list);
 			}
 	  |  list.0.N COMMA list          { 
-		    command::list_ptr list;
-				if (static_cast<command::list*>($1.get()) == nullptr) 
-					list = std::make_unique<command::list>();
-				else
-					list.reset(static_cast<command::list*>($1.release()));
-				list->emplace_back(std::move($3));
-				$$.reset(list.release());
+				command::list list; 
+				if ($1.index() == 1) 
+					list.emplace_back(std::move($1));
+				else if ($1.index() == 2) 
+					list = std::get<command::list>(std::move($1)));
+				list.emplace_back(std::move($3));
+				$$ = std::move(list);
 		  }
 	  ;
 

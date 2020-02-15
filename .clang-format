@@ -1,0 +1,13 @@
+---
+Language: Cpp
+PenaltyReturnTypeOnItsOwnLine: '10000'
+TabWidth: '2'
+UseTab: Never
+PointerAlignment: Left
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Right
+AlwaysBreakTemplateDeclarations: true
+IncludeBlocks: Regroup
+...
