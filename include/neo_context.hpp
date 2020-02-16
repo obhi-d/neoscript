@@ -38,8 +38,9 @@ public:
 
 private:
   std::vector<neo::command_template> templates_;
-  interpreter::block* current_block_;
   interpreter* interpreter_;
+  std::uint32_t block_;
   std::string region_;
+  bool scope_trigger_;
 };
 }

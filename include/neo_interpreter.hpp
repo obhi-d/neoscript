@@ -39,13 +39,14 @@ struct interpreter {
   struct block;
   struct handler {
     command_handler_t callback_;
-    block*            sub_handlers_;
+    std::uint32_t     sub_handlers_;
   };
   struct block {
-    block*                                        parent_ = nullptr;
-    std::unordered_map<std::string_view, handler> events;
+    std::uint32_t                                 parent_ = nullptr;
+    std::unordered_map<std::string_view, handler> events_;
   };
 
-  block root_;
+  // block 0 is always the root
+  std::vector<block> blocks_;
 };
 }

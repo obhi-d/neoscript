@@ -109,6 +109,7 @@ public:
 private:
   std::string name_;
   parameters  params_;
+  bool scoped_;
 };
 
 } // namespace neo
