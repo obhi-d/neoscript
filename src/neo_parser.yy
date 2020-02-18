@@ -77,11 +77,11 @@ YY_DECL;
 script:                                      {                                                         }
 		| REGION_ID script                       { _.start_region(std::move($1));                          }
 		| commanddecl script                     { _.consume(std::move($1));                               }
-		| templatedecl script                    { _.consume(std::move($1));                               }
+		| templatedecl script                    { _.add_template(std::move($1));                          }
 		| instancedecl script                    { _.consume(std::move($1));                               }
 		| RBRACKET script                        { _.end_block();                                          }
 		| TEXT_REGION_ID TEXT_CONTENTS script    { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($1));                                }
+		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($1));                         }
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 

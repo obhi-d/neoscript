@@ -1,10 +1,12 @@
-
+#pragma once
 #include <cstdint>
 #include <memory>
+#include <neo_common.hpp>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
+#include <functional>
 
 namespace neo {
 
@@ -21,7 +23,8 @@ public:
     single(std::string&& value) : value_(std::move(value)) {}
     single(std::string const& name, std::string const& value)
         : name_(name), value_(value) {}
-    single(std::string&& name, std::string&& value) : name_(std::move(name)), value_(std::move(value)) {}
+    single(std::string&& name, std::string&& value)
+        : name_(std::move(name)), value_(std::move(value)) {}
 
     single& operator=(single const&) = default;
     single& operator=(single&&) = default;
@@ -63,9 +66,12 @@ public:
       value_.emplace_back(std::move(i_param));
     }
 
-    std::size_t count() const noexcept { return value_.size(); }
-    node const& at(std::uint32_t i) const noexcept { return *value_[i].get(); }
+    std::size_t      count() const noexcept { return value_.size(); }
+    node const&      at(std::uint32_t i) const noexcept { return value_[i]; }
     std::string_view name() const { return name_; }
+
+    list::vector&       value() { return value_; }
+    list::vector const& value() const { return value_; }
 
   private:
     vector      value_;
@@ -73,6 +79,30 @@ public:
   };
 
   using param_t = list::node;
+  struct resolver {
+    std::function<std::optional<param_t>(std::string_view name,
+                                         std::string_view value)>
+              op_;
+    resolver* next_ = nullptr;
+  };
+
+  static void inline resolve(resolver const* stack, list::vector& vec) {
+    for (auto& e : vec)
+      std::visit(overloaded{[](std::monostate&) {},
+                            [&stack](list& l) { resolve(stack, l.value()); },
+                            [&stack, &e](single& s) {
+                              for (auto it = stack; it; it = it->next_) {
+                                std::optional<list::node> res =
+                                    it->op_(s.name(), s.value());
+                                if (res) {
+                                  e = res.value();
+                                  break;
+                                }
+                              }
+                            }},
+                 e);
+  }
+
   struct parameters {
     parameters()                  = default;
     parameters(parameters const&) = default;
@@ -87,29 +117,38 @@ public:
     inline void append_expanded(param_t&& i_param) noexcept {
       if (i_param.index() == 2) {
         list& l = std::get<list>(i_param);
-        value_.reserve(value_.size() + l.size());
+        value_.reserve(value_.size() + l.count());
         value_.insert(value_.end(), l.begin(), l.end());
       } else
         value_.emplace_back(std::move(i_param));
+    }
+
+    inline void resolve(resolver const* stack) {
+      command::resolve(stack, value_);
     }
 
     list::vector value_;
   };
 
   command() = default;
-  command(std::string&& name, parameters&& params)
-      : name_(std::move(name)), params_(std::move(params)) {}
+  command(std::string&& name, parameters&& params, bool scoped)
+      : name_(std::move(name)), params_(std::move(params)), scoped_(scoped) {}
 
-  std::string_view    name() const { return name_; }
-  list::vector const& params() const { return params_; }
-  list::vector&       params() { return params_; }
+  std::string_view  name() const { return name_; }
+  parameters const& params() const { return params_; }
+  parameters&       params() { return params_; }
 
   operator bool() const { return name_.length() > 0; }
+
+  bool is_scoped() const { return scoped_; }
+
+  void resolve(resolver const* stack) { params_.resolve(stack); }
 
 private:
   std::string name_;
   parameters  params_;
-  bool scoped_;
+  bool        scoped_;
 };
+using resolver = neo::command::resolver;
 
 } // namespace neo

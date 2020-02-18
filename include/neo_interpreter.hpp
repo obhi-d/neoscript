@@ -1,7 +1,8 @@
-#include <unordered_map>
+#pragma once
 #include <neo_command.hpp>
 #include <neo_context.hpp>
 #include <string_view>
+#include <unordered_map>
 
 namespace neo {
 
@@ -33,20 +34,38 @@ struct callback_t {
 
 struct command_handler {};
 
-using command_handler_t = callback_t<command_handler, bool, neo::context const&, neo::command const&>;
+using command_handler_t =
+    callback_t<command_handler, bool, neo::context const&, neo::command const&>;
 
 struct interpreter {
   struct block;
   struct handler {
-    command_handler_t callback_;
+    command_handler_t cbk_;
     std::uint32_t     sub_handlers_;
   };
   struct block {
-    std::uint32_t                                 parent_ = nullptr;
     std::unordered_map<std::string_view, handler> events_;
   };
 
+  std::uint32_t execute(std::uint32_t block, neo::context& ctx,
+                        neo::command& cmd) {
+    auto& block_ref = blocks_[block];
+    auto  it        = block_ref.events_.find(cmd.name());
+    if (it != block_ref.events_.end()) {
+      (*it).second.cbk_(ctx, cmd);
+      return (*it.).second.sub_handlers_;
+    }
+    return block;
+  }
+
+  std::uint32_t get_region_root(std::string_view name) const {
+    auto it = reg_block_mappings_.find(name);
+    if (it != reg_block_mappings_.end())
+      return (*it).second;
+    return 0;
+  } // region type to block mapping
+  std::unordered_map<std::string_view, std::uint32_t> reg_block_mappings_;
   // block 0 is always the root
   std::vector<block> blocks_;
 };
-}
+} // namespace neo
