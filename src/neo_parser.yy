@@ -13,6 +13,8 @@
 
 %code requires
 {
+#include <neo_context.hpp>
+
 namespace neo {
   class location;
   class context;
@@ -61,7 +63,6 @@ YY_DECL;
 %token <std::string> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
 
 // Types
-%type <script> script
 %type <command> commanddecl
 %type <command_instance> instancedecl
 %type <command::parameters> parameters.0.N 
@@ -81,7 +82,7 @@ script:                                      {                                  
 		| instancedecl script                    { _.consume(std::move($1));                               }
 		| RBRACKET script                        { _.end_block();                                          }
 		| TEXT_REGION_ID TEXT_CONTENTS script    { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($1));                         }
+		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($2));                         }
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 
@@ -101,7 +102,7 @@ templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
 						 }
 			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET commanddecl {
 				 				$$ = _.make_command_template(std::move($2),
-							        std::move($3), std::move($5));
+							        std::move($4), std::move($6));
 				     }
 				;
 
@@ -109,8 +110,8 @@ commanddecl: SEMICOLON                          {  }
 		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = _.make_command(std::move($1), std::move($2)); }
 		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = _.make_command(std::move($1), std::move($2), true); }
 		 
-instancedecl: INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
-		 | INSTANCE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
+instancedecl: INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
+		 | INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
 
 parameters.0.N:                       { }
 				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }
@@ -131,7 +132,7 @@ special_parameters.0.N:            {  }
 				if ($1.index() == 1) 
 					list.emplace_back(std::move($1));
 				else if ($1.index() == 2) 
-					list = std::get<command::list>(std::move($1)));
+					list = std::get<command::list>(std::move($1));
 
 				list.emplace_back(std::move($3));
 				$$ = std::move(list);
@@ -140,7 +141,7 @@ special_parameters.0.N:            {  }
 
 special_parameter: IDENTIFIER  ASSIGN  parameter 
 			{ 
-				$3->set_name($1); 
+				neo::command::parameters::set_name($3, std::move($1)); 
 				$$ = std::move($3);	
 			}
 			;
@@ -165,7 +166,7 @@ list.0.N:								{ }
 				if ($1.index() == 1) 
 					list.emplace_back(std::move($1));
 				else if ($1.index() == 2) 
-					list = std::get<command::list>(std::move($1)));
+					list = std::get<command::list>(std::move($1));
 				list.emplace_back(std::move($3));
 				$$ = std::move(list);
 		  }
@@ -182,10 +183,11 @@ void parser_impl::error(location_type const& l,
   _.push_error(l, e.c_str());
 }
 
-void context::parse() {
+void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) {
+	source_name_ = src_name;
 	begin_scan();
 	parser_impl parser(*this);
-	parser.set_debug_level(trace_parsing);
+	parser.set_debug_level(flags_ & f_trace_parse);
 	int res = parser.parse();
 	end_scan();
 }

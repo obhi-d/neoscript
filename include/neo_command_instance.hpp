@@ -10,16 +10,21 @@ class context;
 class command_template;
 class command_instance {
 public:
-  command_instance()                        = default;
-  command_instance(command_instance const&) = default;
-  command_instance(command_instance&&)      = default;
+  command_instance()                            = default;
+  command_instance(command_instance const&)     = default;
+  command_instance(command_instance&&) noexcept = default;
   command_instance& operator=(command_instance const&) = default;
-  command_instance& operator=(command_instance&&) = default;
+  command_instance& operator=(command_instance&&) noexcept = default;
+  command_instance(std::string&& name, neo::command::param_t&& param,
+                   bool extended)
+      : template_(std::move(name)), param_list_(std::move(param)),
+        is_extended_(extended) {}
 
   bool is_extended() const { return is_extended_; }
   void build(neo::context&, neo::command_template const&);
   void visit(neo::context&, bool extend);
-  std::optional<command::param_t> resolve(std::string_view name, std::string_view value);
+  std::optional<command::param_t> resolve(std::string_view name,
+                                          std::string_view value);
 
   std::string                                                 template_;
   neo::command::param_t                                       param_list_;

@@ -1,8 +1,14 @@
+#include <fstream>
 #include <neo_context.hpp>
 #include <neo_interpreter.hpp>
 
 namespace neo {
-context::context() {}
+
+interpreter* get_interpreter(interpreter_id);
+context::context(std::string_view interpreter, context::option_flags flags)
+    : flags_(flags), importer_(&context::default_import_handler) {
+  interpreter_ = neo::get_interpreter(neo::get_interpreter(interpreter));
+}
 void context::start_region(std::string&& region) {
   if (block_stack_.size() > 1) {
     push_error(loc(), "syntax error, missing '}'");
@@ -106,8 +112,9 @@ void context::consume(neo::command_instance&& cmd_inst) {
       record_stack_.push_back(&rec->sub_.back());
   } else if (interpreter_) {
     resolver res;
-    res.op_ = std::bind(&command_instance::resolve, &cmd_inst, std::placeholders::_1, std::placeholders::_2);
-    res.next_     = resolver_stack_;
+    res.op_         = std::bind(&command_instance::resolve, &cmd_inst,
+                        std::placeholders::_1, std::placeholders::_2);
+    res.next_       = resolver_stack_;
     resolver_stack_ = &res;
     cmd_inst.visit(*this, cmd_inst.is_extended());
     resolver_stack_ = resolver_stack_->next_;
@@ -126,28 +133,50 @@ void context::end_block() {
 void context::start_region(std::string&& region_id, std::string&& content) {
   text_regions_.emplace(std::move(region_id), std::move(content));
 }
-void context::import_script(std::string&& file_id) {}
-void context::parse() {}
+void context::import_script(std::string&& file_id) {
+  auto file = importer_(file_id);
+  parse(file_id, file);
+}
+
 void context::error(location_type const&, std::string const&) {}
-neo::command_template context::make_command_template(std::vector<std::string>&&,
-                                                     neo::command&&) {
-  return neo::command_template();
+neo::command_template context::make_command_template(
+    std::vector<std::string>&& params, neo::command&& cmd) {
+  std::string name(cmd.name());
+  return neo::command_template(std::move(name), std::move(params),
+                               std::move(cmd));
 }
-neo::command_template context::make_command_template(std::string&&,
-                                                     std::vector<std::string>&&,
-                                                     neo::command&&) {
-  return neo::command_template();
+
+neo::command_template context::make_command_template(
+    std::string&& name, std::vector<std::string>&& params, neo::command&& cmd) {
+  return neo::command_template(std::move(name), std::move(params),
+                               std::move(cmd));
 }
-neo::command context::make_command(std::string&&, neo::command::parameters&&,
-                                   bool scope_trigger) {
-  return neo::command();
+neo::command context::make_command(std::string&&              name,
+                                   neo::command::parameters&& params,
+                                   bool                       scope_trigger) {
+  return neo::command(std::move(name), std::move(params), scope_trigger);
 }
-neo::command_instance context::make_instance(std::string&&,
-                                             neo::command::param_t&&,
+neo::command_instance context::make_instance(std::string&&           name,
+                                             neo::command::param_t&& param,
                                              bool scope_trigger) {
-  return neo::command_instance();
+  return neo::command_instance(std::move(name), std::move(param),
+                               scope_trigger);
 }
-std::string const* context::get_file_name() const { return nullptr; }
-void context::push_error(location const& l, std::string const& e) {}
+void               context::push_error(location const& l, std::string_view e) {
+  std::string loc = l;
+  loc += e;
+  errors_.emplace_back(std::move(loc));
+}
+
 void context::resolve(neo::command& cmd) { cmd.resolve(resolver_stack_); }
+int  context::read(char* buffer, int size) {
+  current_file_->read(buffer, static_cast<std::streamsize>(size - 1));
+  int read     = static_cast<int>(current_file_->gcount());
+  buffer[read] = 0;
+  return read;
+}
+std::shared_ptr<std::istream> neo::context::default_import_handler(
+    std::string const& file) {
+  return std::make_shared<std::ifstream>(file);
+}
 } // namespace neo

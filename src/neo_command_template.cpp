@@ -4,9 +4,9 @@
 
 namespace neo {
 
-command_template::command_template(template_record const& rec) : main_(rec) {}
-
 void command_template::record::visit(neo::context& ctx, bool extend) const {
+  if (ctx.fail_bit())
+    return;
   std::visit(
       overloaded{
           [&ctx](auto const& oth) {},
@@ -23,7 +23,7 @@ void command_template::record::visit(neo::context& ctx, bool extend) const {
       },
       node_);
   if (sub_.size() > 0) {
-    for (auto const& e : subs_) {
+    for (auto const& e : sub_) {
       e.visit(ctx, false);
     }
     if (!extend)

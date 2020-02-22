@@ -1,20 +1,32 @@
 #pragma once
+#include <istream>
+#include <memory>
 #include <neo_command.hpp>
 #include <neo_command_instance.hpp>
 #include <neo_command_template.hpp>
 #include <neo_location.hpp>
-#include <neo_script.hpp>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <optional>
 
 namespace neo {
 struct interpreter;
 class context {
 public:
-  context();
+  enum options {
+    f_trace_scan        = 1,
+    f_trace_parse       = 2,
+    f_continue_on_error = 4,
+  };
+
+  using option_flags = std::uint32_t;
+  using import_handler =
+      std::function<std::shared_ptr<std::istream>(std::string const&)>;
+
+  context(std::string_view interpreter, option_flags flags = 0);
   using location_type = neo::location;
+
   void start_region(std::string&&);
   void consume(neo::command&& cmd);
   void add_template(neo::command_template&&);
@@ -24,9 +36,23 @@ public:
   void end_block();
   void start_region(std::string&& region_id, std::string&& content);
   void import_script(std::string&& file_id);
-  void parse();
+  void parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile);
   void error(location_type const&, std::string const&);
 
+  // Import handler registration
+  void set_import_handler(import_handler&& handler) {
+    importer_ = std::move(handler);
+  }
+
+  // String container
+  void               put(char c) { content_ += c; }
+  void               put(std::string_view sv) { content_ += sv; }
+  std::string const& get() const { return content_; }
+  void               start() { content_.clear(); }
+
+  // stream
+  int read(char* buffer, int siz);
+  // Content creator
   neo::command_template make_command_template(std::vector<std::string>&&,
                                               neo::command&&);
   neo::command_template make_command_template(std::string&&,
@@ -37,13 +63,11 @@ public:
   neo::command_instance make_instance(std::string&&, neo::command::param_t&&,
                                       bool scope_trigger = false);
 
-  std::string const* get_file_name() const;
-  location_type      loc() const;
+  std::string const*   get_file_name() const { return &source_name_; }
+  location_type const& loc() const { return loc_; }
+  location_type&       loc() { return loc_; }
 
-  void push_error(location const& l, std::string const& e);
-
-  void* scanner = nullptr;
-
+  void push_error(location const& l, std::string_view e);
   void resolve(neo::command&);
 
   neo::command_template const& find_template(std::string const& name) {
@@ -52,17 +76,27 @@ public:
       if ((*it).second.index() == 0)
         return std::get<command_template>((*it).second);
       else {
-        std::vector<neo::command_template>& v = std::get<std::vector<neo::command_template>>((*it).second);
-        return v.back(); 
-
-      }    
+        std::vector<neo::command_template>& v =
+            std::get<std::vector<neo::command_template>>((*it).second);
+        return v.back();
+      }
     } else {
       push_error(loc(), "template not found: " + name);
-      return command_template();
+      return null_template_;
     }
   }
 
+  void begin_scan();
+  void end_scan();
+
+  void* scanner = nullptr;
+
+  bool fail_bit() const { return errors_.size() > 0 && !(flags_ & f_continue_on_error); }
+
 private:
+  static std::shared_ptr<std::istream> default_import_handler(
+      std::string const&);
+
   using templ_one_many =
       std::variant<neo::command_template, std::vector<neo::command_template>>;
   using template_map    = std::unordered_map<std::string, templ_one_many>;
@@ -71,8 +105,16 @@ private:
   text_region_map                             text_regions_;
   std::vector<std::uint32_t>                  block_stack_;
   std::vector<neo::command_template::record*> record_stack_;
+  std::vector<std::string>                    errors_;
   interpreter*                                interpreter_ = nullptr;
-  resolver*                       resolver_stack_;
+  resolver*                                   resolver_stack_ = nullptr;
   std::string                                 region_;
+  import_handler                              importer_;
+  std::shared_ptr<std::istream>               current_file_;
+  static const command_template               null_template_;
+  std::string                                 content_;
+  std::string                                 source_name_;
+  location_type                               loc_;
+  option_flags                                flags_ = 0;
 };
 } // namespace neo

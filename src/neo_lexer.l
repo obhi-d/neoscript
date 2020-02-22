@@ -64,7 +64,7 @@ BLANK   [ \t]
 		_.put(result); 
 }
 
-\\[0-9]+     	_.parse_error(neo::context::BAD_ESCAPE_SEQ);
+\\[0-9]+     	_.push_error(_.loc(), "bad escape sequence");
 \\n  					_.put('\n');
 \\t  					_.put('\t');
 \\r  					_.put('\r');
@@ -81,8 +81,8 @@ BLANK   [ \t]
 "{"                                return neo::parser_impl::make_LBRACKET(_.loc());
 "}"                                return neo::parser_impl::make_RBRACKET(_.loc());
 "template"	                       return neo::parser_impl::make_TEMPLATE(_.loc());
-"invoke"	                         return neo::parser_impl::make_INSTANCE(_.loc());
-"import"	                         return neo::parser_impl::make_INVOKE(_.loc());
+"invoke"	                         return neo::parser_impl::make_INVOKE(_.loc());
+"import"	                         return neo::parser_impl::make_IMPORT(_.loc());
 "<"			                           return neo::parser_impl::make_LABRACKET(_.loc());
 ">"			                           return neo::parser_impl::make_RABRACKET(_.loc());
 "["                                return neo::parser_impl::make_LSQBRACKET(_.loc());
@@ -160,7 +160,7 @@ namespace neo {
 
 void context::begin_scan() {
   neo_lex_init_extra(this, &scanner);
-  neo_set_debug(trace_scanning, scanner);
+  neo_set_debug(flags_ & f_trace_scan, scanner);
 }
 
 void context::end_scan() {
