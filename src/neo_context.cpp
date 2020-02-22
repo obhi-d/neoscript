@@ -4,21 +4,19 @@
 
 namespace neo {
 
-interpreter* get_interpreter(interpreter_id);
-context::context(std::string_view interpreter, context::option_flags flags)
-    : flags_(flags), importer_(&context::default_import_handler) {
-  interpreter_ = neo::get_interpreter(neo::get_interpreter(interpreter));
-}
+const command_template context::null_template_;
+context::context(interpreter& interp, command_handler& handler,
+                 context::option_flags flags)
+    : flags_(flags), importer_(&context::default_import_handler),
+      interpreter_(interp), cmd_handler_(handler) {}
+
 void context::start_region(std::string&& region) {
   if (block_stack_.size() > 1) {
     push_error(loc(), "syntax error, missing '}'");
     return;
   }
   block_stack_.clear();
-  if (interpreter_)
-    block_stack_.push_back(interpreter_->get_region_root(region));
-  else
-    block_stack_.push_back(0);
+  block_stack_.push_back(interpreter_.get_region_root(region));
   this->region_ = std::move(region);
 }
 void context::consume(neo::command&& cmd) {
@@ -28,11 +26,15 @@ void context::consume(neo::command&& cmd) {
     rec->sub_.emplace_back(command_template::command_record(std::move(cmd)));
     if (scoped)
       record_stack_.push_back(&rec->sub_.back());
-  } else if (interpreter_) {
+  } else {
     if (resolver_stack_)
       resolve(cmd);
-    std::uint32_t sub =
-        interpreter_->execute(this->block_stack_.back(), *this, cmd);
+    std::uint32_t sub = interpreter_.execute(*this, cmd_handler_,
+                                             this->block_stack_.back(), cmd);
+    if (sub == interpreter::k_failure) {
+      push_error(loc(), "command execution failure");
+      return;
+    }
     if (cmd.is_scoped())
       block_stack_.push_back(sub);
   }
@@ -72,7 +74,7 @@ void context::add_template(neo::command_template&& cmd_templ) {
   }
 }
 void context::add_template(neo::command_template::template_record&& cmd_templ) {
-  auto& it = templates_.find(cmd_templ.name_);
+  auto it = templates_.find(cmd_templ.name_);
   if (it != templates_.end()) {
     if ((*it).second.index() == 0) {
       neo::command_template& templ =
@@ -91,7 +93,7 @@ void context::add_template(neo::command_template::template_record&& cmd_templ) {
   }
 }
 void context::remove_template(std::string const& name) {
-  auto& it = templates_.find(name);
+  auto it = templates_.find(name);
   if (it != templates_.end()) {
     if ((*it).second.index() == 0) {
       templates_.erase(it);
@@ -110,7 +112,7 @@ void context::consume(neo::command_instance&& cmd_inst) {
         command_template::instance_record(std::move(cmd_inst)));
     if (scoped)
       record_stack_.push_back(&rec->sub_.back());
-  } else if (interpreter_) {
+  } else {
     resolver res;
     res.op_         = std::bind(&command_instance::resolve, &cmd_inst,
                         std::placeholders::_1, std::placeholders::_2);
@@ -162,7 +164,7 @@ neo::command_instance context::make_instance(std::string&&           name,
   return neo::command_instance(std::move(name), std::move(param),
                                scope_trigger);
 }
-void               context::push_error(location const& l, std::string_view e) {
+void context::push_error(location const& l, std::string_view e) {
   std::string loc = l;
   loc += e;
   errors_.emplace_back(std::move(loc));

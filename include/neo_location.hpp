@@ -1,16 +1,15 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <ostream>
+#include <string>
 
 namespace neo {
 
 struct position {
-  std::uint32_t line        = 0;
-  std::uint32_t character   = 0;
+  std::uint32_t line      = 0;
+  std::uint32_t character = 0;
   friend bool   operator==(position const& first, position const& second) {
-    return 
-           first.line == second.line && first.character == second.character;
+    return first.line == second.line && first.character == second.character;
   }
   friend bool operator!=(position const& first, position const& second) {
     return !(first == second);
@@ -51,8 +50,8 @@ public:
   }
 
   std::string const* source_name = nullptr;
-  position begin;
-  position end;
+  position           begin;
+  position           end;
 };
 
 } // namespace neo

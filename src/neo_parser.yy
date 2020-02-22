@@ -1,10 +1,10 @@
 %language "C++"
 %skeleton "lalr1.cc"
-%name-prefix "neo_"
 
 %defines
-%define parser_class_name {parser_impl}
+%define api.parser.class {parser_impl}
 %define api.namespace {neo}
+%define api.prefix {neo_}
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
@@ -184,12 +184,15 @@ void parser_impl::error(location_type const& l,
 }
 
 void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) {
+	auto restore_file = current_file_;
+	current_file_ = ifile;
 	source_name_ = src_name;
 	begin_scan();
 	parser_impl parser(*this);
 	parser.set_debug_level(flags_ & f_trace_parse);
 	int res = parser.parse();
 	end_scan();
+	current_file_ = restore_file;
 }
 
 }

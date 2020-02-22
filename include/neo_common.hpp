@@ -1,5 +1,6 @@
 
 #pragma once
+#include <cassert>
 
 namespace neo {
 // helper type for the visitor #4
@@ -10,4 +11,4 @@ struct overloaded : Ts... {
 template <class... Ts>
 overloaded(Ts...)->overloaded<Ts...>;
 
-}
+} // namespace neo

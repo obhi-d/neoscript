@@ -11,7 +11,8 @@
 #include <vector>
 
 namespace neo {
-struct interpreter;
+class interpreter;
+struct command_handler;
 class context {
 public:
   enum options {
@@ -24,7 +25,8 @@ public:
   using import_handler =
       std::function<std::shared_ptr<std::istream>(std::string const&)>;
 
-  context(std::string_view interpreter, option_flags flags = 0);
+  context(interpreter& interp, command_handler& handler,
+          option_flags flags = 0);
   using location_type = neo::location;
 
   void start_region(std::string&&);
@@ -91,7 +93,9 @@ public:
 
   void* scanner = nullptr;
 
-  bool fail_bit() const { return errors_.size() > 0 && !(flags_ & f_continue_on_error); }
+  bool fail_bit() const {
+    return errors_.size() > 0 && !(flags_ & f_continue_on_error);
+  }
 
 private:
   static std::shared_ptr<std::istream> default_import_handler(
@@ -106,7 +110,8 @@ private:
   std::vector<std::uint32_t>                  block_stack_;
   std::vector<neo::command_template::record*> record_stack_;
   std::vector<std::string>                    errors_;
-  interpreter*                                interpreter_ = nullptr;
+  interpreter&                                interpreter_;
+  command_handler&                            cmd_handler_;
   resolver*                                   resolver_stack_ = nullptr;
   std::string                                 region_;
   import_handler                              importer_;

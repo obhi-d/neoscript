@@ -1,7 +1,7 @@
+#include <algorithm>
 #include <neo_command_instance.hpp>
 #include <neo_command_template.hpp>
 #include <neo_context.hpp>
-#include <algorithm>
 
 namespace neo {
 
@@ -15,14 +15,13 @@ void command_instance::build(neo::context&                ctx,
                    std::string_view name = s.name();
                    if (name.length() > 0) {
                      param_m[name] = neo::command::single(s.value());
-                   }
-                   else if (params.size() > 0) {
+                   } else if (params.size() > 0) {
                      param_m[params[0]] = s;
                    }
                  },
                  [&params, &param_m](neo::command::list const& s) {
                    std::size_t min_v = std::min(s.count(), params.size());
-                   auto const& val = s.value();
+                   auto const& val   = s.value();
                    for (std::size_t i = 0; i < min_v; ++i)
                      param_m[params[i]] = val[i];
                  },

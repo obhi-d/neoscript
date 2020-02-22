@@ -125,21 +125,24 @@ public:
       } else
         value_.emplace_back(std::move(i_param));
     }
-    inline void resolve(resolver const* stack) {
+    inline void resolve(resolver const* stack) noexcept {
       command::resolve(stack, value_);
     }
-    static void set_name(param_t& _, std::string&& name) {
+    static void set_name(param_t& _, std::string&& name) noexcept {
       std::visit(
           overloaded{[](std::monostate& s) {},
                      [&name](auto& other) { other.set_name(std::move(name)); }},
           _);
     }
 
+    list::vector&       value() noexcept { return value_; }
+    list::vector const& value() const noexcept { return value_; }
+
     list::vector value_;
   };
 
-  command() = default;
-  command(std::string&& name, parameters&& params, bool scoped)
+  command() noexcept = default;
+  command(std::string&& name, parameters&& params, bool scoped) noexcept
       : name_(std::move(name)), params_(std::move(params)), scoped_(scoped) {}
 
   std::string_view  name() const { return name_; }
