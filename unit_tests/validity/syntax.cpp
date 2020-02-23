@@ -20,7 +20,7 @@ struct test_command_handler : public neo::command_handler {
                                    output += s.name();
                                    output += " = ";
                                  }
-                                 output += " [ ";
+                                 output += "[";
 
                                  bool first = true;
 
@@ -31,7 +31,7 @@ struct test_command_handler : public neo::command_handler {
                                    output += to_string(b);
                                  }
 
-                                 output += " ] ";
+                                 output += "]";
                                }},
                param);
     return output;
@@ -52,21 +52,103 @@ struct test_command_handler : public neo::command_handler {
     return true;
   }
 
+  bool print_region(neo::context const& ctx, neo::command const& cmd) {
+    auto const& params = cmd.params().value();
+    bool        first  = true;
+    std::string output;
+    for (auto const& val : params) {
+      if (std::visit(neo::overloaded{[&](neo::command::single const& s) {
+                                       if (s.name() == "region") {
+                                         output =
+                                             ctx.get_text_content(s.value());
+                                       }
+                                       return true;
+                                     },
+                                     [](auto const&) { return false; }},
+                     val))
+        break;
+    }
+    this->output = output;
+    return true;
+  }
+
   std::string output;
 };
 
-TEST_CASE("Region test", "[region]") {
+TEST_CASE("Scoped command", "[region0]") {
 
   neo::interpreter test_interpreter;
-  std::string      test = " {{code:Scoped}} \n"
-                     " echo \"Hello world\"; \n";
+  std::string      test = "{{code:Scoped}} \n"
+                     "echo \"Hello world\"; \n";
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  auto root = test_interpreter.ensure_region_root("Scoped");
+  auto root = test_interpreter.ensure_region_root("code:Scoped");
   test_interpreter.add_command(root, "echo", &test_command_handler::generate);
   test_command_handler handler;
-  neo::context         context(test_interpreter, handler);
+  neo::context         context(test_interpreter, handler, 0);
   context.parse("memory", iss);
+  REQUIRE(!context.fail_bit());
   REQUIRE(handler.output == "echo --> (Hello world)\n");
+}
+
+TEST_CASE("Text region", "[region1]") {
+
+  neo::interpreter test_interpreter;
+  std::string      test = "{{text:History}}\n"
+                     "The world began when we perished.\n"
+                     "But we left our mark to be found again.\n"
+                     "In the future, we lived again in memories.\n"
+                     "Of time{\n"
+                     "\\{\\{unknown}}\n"
+                     "{{code:Print}}\n"
+                     "print (region = \"text:History\"); \n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root = test_interpreter.ensure_region_root("code:Print");
+  test_interpreter.add_command(root, "print",
+                               &test_command_handler::print_region);
+  test_command_handler handler;
+  neo::context         context(test_interpreter, handler, 0);
+  context.parse("memory", iss);
+  REQUIRE(!context.fail_bit());
+  REQUIRE(handler.output == "\nThe world began when we perished.\n"
+                            "But we left our mark to be found again.\n"
+                            "In the future, we lived again in memories.\n"
+                            "Of time\n"
+                            "{{unknown}}\n");
+}
+
+TEST_CASE("Any command", "[region1]") {
+
+  neo::interpreter test_interpreter;
+  std::string      test = "first command [is, executed];\n"
+                     "second command [is, stalled];\n"
+                     "{{code:Main}}\n"
+                     "Third command [is, super = executed];\n"
+                     "Fourth command [is, stalled] {\n"
+                     "  Four point one command;\n"
+                     "  Four point two command;\n"
+                     "}\n"
+                     "{{code:Print}}\n"
+                     "print (region = \"text:History\"); \n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root = test_interpreter.ensure_region_root("");
+  test_interpreter.add_command(root, "*", &test_command_handler::generate);
+  root = test_interpreter.ensure_region_root("code:Print");
+  test_interpreter.add_command(root, "*", &test_command_handler::generate);
+  test_command_handler handler;
+  neo::context         context(test_interpreter, handler, 0);
+  context.parse("memory", iss);
+  REQUIRE(!context.fail_bit());
+  REQUIRE(handler.output == "first --> (command, [is, executed])\n"
+                            "second --> (command, [is, stalled])\n"
+                            "Third --> (command, [is, super = executed])\n"
+                            "Fourth --> (command, [is, stalled])\n"
+                            "Four --> (point, one, command)\n"
+                            "Four --> (point, two, command)\n"
+                            "print --> (region = text:History)\n");
 }

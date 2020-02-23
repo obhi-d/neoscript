@@ -97,6 +97,17 @@ public:
     return errors_.size() > 0 && !(flags_ & f_continue_on_error);
   }
 
+  std::string_view get_text_content(std::string const& name) const {
+    auto it = text_regions_.find(name);
+    if (it != text_regions_.end())
+      return (*it).second;
+    return "";
+  }
+
+  std::string& get_text_content(std::string const& name) {
+    return text_regions_[name];
+  }
+
 private:
   static std::shared_ptr<std::istream> default_import_handler(
       std::string const&);

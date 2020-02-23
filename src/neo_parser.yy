@@ -75,14 +75,18 @@ YY_DECL;
 
 %%
 /*============================================================================*/
-script:                                      {                                                         }
-		| REGION_ID script                       { _.start_region(std::move($1));                          }
-		| commanddecl script                     { _.consume(std::move($1));                               }
-		| templatedecl script                    { _.add_template(std::move($1));                          }
-		| instancedecl script                    { _.consume(std::move($1));                               }
-		| RBRACKET script                        { _.end_block();                                          }
-		| TEXT_REGION_ID TEXT_CONTENTS script    { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT IDENTIFIER SEMICOLON script     { _.import_script(std::move($2));                         }
+script: statement                            { }
+		| statement script                       { }
+
+statement:                                   {                                                         }
+		| REGION_ID                              { _.start_region(std::move($1));                          }
+		| commanddecl                            { _.consume(std::move($1));                               }
+		| templatedecl                           { _.add_template(std::move($1));                          }
+		| instancedecl                           { _.consume(std::move($1));                               }
+		| RBRACKET                               { _.end_block();                                          }
+		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));           }
+		| IMPORT IDENTIFIER SEMICOLON            { _.import_script(std::move($2));                         }
+
 
 template_args.0.N:			{}
 					| IDENTIFIER	{ 
@@ -187,6 +191,7 @@ void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& if
 	auto restore_file = current_file_;
 	current_file_ = ifile;
 	source_name_ = src_name;
+	start_region("");
 	begin_scan();
 	parser_impl parser(*this);
 	parser.set_debug_level(flags_ & f_trace_parse);

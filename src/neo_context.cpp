@@ -35,8 +35,10 @@ void context::consume(neo::command&& cmd) {
       push_error(loc(), "command execution failure");
       return;
     }
-    if (cmd.is_scoped())
+    if (cmd.is_scoped() && sub != block_stack_.back()) {
       block_stack_.push_back(sub);
+      interpreter_.begin_scope(*this, cmd_handler_, sub);
+    }
   }
 }
 void context::add_template(neo::command_template&& cmd_templ) {

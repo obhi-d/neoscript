@@ -34,8 +34,8 @@ public:
     void set_name(std::string&& name) { name_ = std::move(name); }
     void set_value(std::string&& value) { value_ = std::move(value); }
 
-    std::string_view name() const noexcept { return name_; }
-    std::string_view value() const noexcept { return name_; }
+    std::string const& name() const noexcept { return name_; }
+    std::string const& value() const noexcept { return value_; }
 
   private:
     std::string name_;
@@ -68,9 +68,9 @@ public:
       value_.emplace_back(std::move(i_param));
     }
 
-    std::size_t      count() const noexcept { return value_.size(); }
-    node const&      at(std::uint32_t i) const noexcept { return value_[i]; }
-    std::string_view name() const { return name_; }
+    std::size_t        count() const noexcept { return value_.size(); }
+    node const&        at(std::uint32_t i) const noexcept { return value_[i]; }
+    std::string const& name() const { return name_; }
 
     list::vector&       value() { return value_; }
     list::vector const& value() const { return value_; }
