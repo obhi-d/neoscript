@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <istream>
 #include <memory>
 #include <neo_command.hpp>
@@ -92,6 +93,11 @@ public:
   void end_scan();
 
   void* scanner = nullptr;
+
+  template <typename lambda>
+  void for_each_error(lambda&& l) {
+    std::for_each(errors_.begin(), errors_.end(), l);
+  }
 
   bool fail_bit() const {
     return errors_.size() > 0 && !(flags_ & f_continue_on_error);

@@ -29,15 +29,15 @@ void context::consume(neo::command&& cmd) {
   } else {
     if (resolver_stack_)
       resolve(cmd);
-    std::uint32_t sub = interpreter_.execute(*this, cmd_handler_,
-                                             this->block_stack_.back(), cmd);
-    if (sub == interpreter::k_failure) {
+    auto sub = interpreter_.execute(*this, cmd_handler_,
+                                    this->block_stack_.back(), cmd);
+    if (std::get<0>(sub) == interpreter::k_failure) {
       push_error(loc(), "command execution failure");
       return;
     }
-    if (cmd.is_scoped() && sub != block_stack_.back()) {
-      block_stack_.push_back(sub);
-      interpreter_.begin_scope(*this, cmd_handler_, sub);
+    if (cmd.is_scoped() && std::get<1>(sub)) {
+      block_stack_.push_back(std::get<0>(sub));
+      interpreter_.begin_scope(*this, cmd_handler_, std::get<0>(sub));
     }
   }
 }
@@ -130,8 +130,10 @@ void context::end_block() {
   } else {
     if (block_stack_.size() <= 1)
       push_error(loc(), "syntax error, unexpected '}'");
-    else
+    else {
+      interpreter_.end_scope(*this, cmd_handler_, block_stack_.back());
       block_stack_.pop_back();
+    }
   }
 }
 void context::start_region(std::string&& region_id, std::string&& content) {
@@ -141,7 +143,6 @@ void context::import_script(std::string&& file_id) {
   auto file = importer_(file_id);
   parse(file_id, file);
 }
-
 void context::error(location_type const&, std::string const&) {}
 neo::command_template context::make_command_template(
     std::vector<std::string>&& params, neo::command&& cmd) {

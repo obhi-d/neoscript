@@ -1,0 +1,45 @@
+{{code:GameEcho}}
+
+template EchoHelp<Msg>
+Echo "Help!~ " Msg;
+
+template EchoHowMany<HowMany>
+Echo "HowMany!~ " HowMany;
+
+template EchoEnemy<Whose, Origin>
+Echo "Enemy!~ Of " Whose " From " Origin;
+
+template <Name>
+Inner {
+    Echo "Inside!~ " Name;
+}
+
+template <Who, Name, Whom>
+Spell {
+    Echo "Spell!~ " Who " casting spell " Name " on " Whom;
+}
+
+template Secret<Msg, Dest>
+Inner {
+    Hidden {
+        Echo "Hidden!~ " Msg " transmitting to " Dest;
+    }
+}
+
+Inner {
+    Hidden {
+        Echo "Hello World!";
+    }
+}
+
+Echo "I am waiting.";
+invoke EchoHelp<"Enemy found me!">;
+invoke EchoHowMany<["KrakenLevel10", "KrakenLevel12", "DusaLevel22"]>;
+invoke EchoEnemy<"Fantastico", "Underlord Cavern">;
+invoke EchoEnemy<"Fantastico", "Severed Head Inn">;
+invoke Inner<"Fantastico sanctum">;
+invoke Spell<"KrakenLevel10", "Fligano", "Mr.Fantastic">;
+invoke Secret<"Magic Wand", "Fantastico sanctum">;
+invoke Spell<"Mr.Fantastic", "Fligano", "KrakenLevel10">;
+Echo "KrakenLevel10 just died! Victory!";
+

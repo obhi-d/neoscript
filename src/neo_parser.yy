@@ -75,10 +75,11 @@ YY_DECL;
 
 %%
 /*============================================================================*/
-script: statement                            { }
-		| statement script                       { }
+script: statement                          { }
+		| statement script                 { }
 
-statement:                                   {                                                         }
+statement:                                       {                                                         }
+		| SEMICOLON                              {                                                         }
 		| REGION_ID                              { _.start_region(std::move($1));                          }
 		| commanddecl                            { _.consume(std::move($1));                               }
 		| templatedecl                           { _.add_template(std::move($1));                          }

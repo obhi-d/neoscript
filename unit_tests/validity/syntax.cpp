@@ -1,41 +1,42 @@
 #include <catch2/catch.hpp>
+#include <iostream>
 #include <istream>
 #include <neo_script.hpp>
 #include <sstream>
 
+std::string to_string(neo::command::param_t const& param) {
+  std::string output;
+  std::visit(neo::overloaded{[&](auto const&) {},
+                             [&](neo::command::single const& s) {
+                               if (s.name().length() > 0) {
+                                 output += s.name();
+                                 output += " = ";
+                               }
+                               output += s.value();
+                             },
+                             [&](neo::command::list const& s) {
+                               if (s.name().length() > 0) {
+                                 output += s.name();
+                                 output += " = ";
+                               }
+                               output += "[";
+
+                               bool first = true;
+
+                               for (auto const& b : s) {
+                                 if (!first)
+                                   output += ", ";
+                                 first = false;
+                                 output += to_string(b);
+                               }
+
+                               output += "]";
+                             }},
+             param);
+  return output;
+}
+
 struct test_command_handler : public neo::command_handler {
-
-  static std::string to_string(neo::command::param_t const& param) {
-    std::string output;
-    std::visit(neo::overloaded{[&](auto const&) {},
-                               [&](neo::command::single const& s) {
-                                 if (s.name().length() > 0) {
-                                   output += s.name();
-                                   output += " = ";
-                                 }
-                                 output += s.value();
-                               },
-                               [&](neo::command::list const& s) {
-                                 if (s.name().length() > 0) {
-                                   output += s.name();
-                                   output += " = ";
-                                 }
-                                 output += "[";
-
-                                 bool first = true;
-
-                                 for (auto const& b : s) {
-                                   if (!first)
-                                     output += ", ";
-                                   first = false;
-                                   output += to_string(b);
-                                 }
-
-                                 output += "]";
-                               }},
-               param);
-    return output;
-  }
 
   bool generate(neo::context const&, neo::command const& cmd) {
     output += cmd.name();
@@ -120,7 +121,7 @@ TEST_CASE("Text region", "[region1]") {
                             "{{unknown}}\n");
 }
 
-TEST_CASE("Any command", "[region1]") {
+TEST_CASE("Any command", "[region2]") {
 
   neo::interpreter test_interpreter;
   std::string      test = "first command [is, executed];\n"
@@ -140,6 +141,11 @@ TEST_CASE("Any command", "[region1]") {
   test_interpreter.add_command(root, "*", &test_command_handler::generate);
   root = test_interpreter.ensure_region_root("code:Print");
   test_interpreter.add_command(root, "*", &test_command_handler::generate);
+  root = test_interpreter.ensure_region_root("code:Main");
+  test_interpreter.add_command(root, "*", &test_command_handler::generate);
+  root = test_interpreter.add_scoped_command(root, "Fourth",
+                                             &test_command_handler::generate);
+  test_interpreter.add_command(root, "*", &test_command_handler::generate);
   test_command_handler handler;
   neo::context         context(test_interpreter, handler, 0);
   context.parse("memory", iss);
@@ -151,4 +157,31 @@ TEST_CASE("Any command", "[region1]") {
                             "Four --> (point, one, command)\n"
                             "Four --> (point, two, command)\n"
                             "print --> (region = text:History)\n");
+}
+
+TEST_CASE("Block test", "[block]") {
+
+  neo::interpreter test_interpreter;
+  std::string      test = "block parameter0 parameter1 {\n"
+                     " command parameter2 parameter4;\n"
+                     "};\n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root = test_interpreter.ensure_region_root("");
+  test_interpreter.add_scoped_command(root, "*",
+                                      &test_command_handler::generate);
+
+  test_command_handler handler;
+  neo::context context(test_interpreter, handler, neo::context::f_trace_parse);
+  context.parse("memory", iss);
+  if (context.fail_bit()) {
+    std::cerr << "[ERROR] While compiling [block]" << std::endl;
+    context.for_each_error([](std::string const& err) {
+      std::cerr << "        " << err << std::endl;
+    });
+  }
+  REQUIRE(!context.fail_bit());
+  REQUIRE(handler.output == "block --> (parameter0, parameter1)\n"
+                            "command --> (parameter2, parameter4)\n");
 }

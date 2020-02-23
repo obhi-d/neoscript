@@ -1,0 +1,15 @@
+
+template Echo<Msg>
+Command {
+	print Msg;
+}
+
+invoke Echo<"Hello">;
+
+template <Msg>
+Clean {
+	print Msg;
+}
+
+invoke Clean<"World">;
+

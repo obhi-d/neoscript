@@ -2,6 +2,7 @@
 #include <neo_command.hpp>
 #include <neo_context.hpp>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 
 namespace neo {
@@ -37,8 +38,8 @@ class interpreter {
     std::unordered_map<std::string_view, handler> events_;
     std::string_view                              name_;
     command_handler_fn                            any_;
-    block_scope_fn                                begin_;
-    block_scope_fn                                end_;
+    block_scope_fn                                begin_ = nullptr;
+    block_scope_fn                                end_   = nullptr;
   };
 
 public:
@@ -58,21 +59,26 @@ public:
     return std::invoke(blocks_[block].end_, &obj, ctx, blocks_[block].name_);
   }
 
-  std::uint32_t execute(neo::context& ctx, command_handler& obj,
-                        std::uint32_t block, neo::command& cmd) {
+  bool is_scoped(std::uint32_t idx) const {
+    return blocks_[idx].begin_ != nullptr;
+  }
+
+  std::tuple<std::uint32_t, bool> execute(neo::context&    ctx,
+                                          command_handler& obj,
+                                          std::uint32_t    block,
+                                          neo::command&    cmd) {
     auto& block_ref = blocks_[block];
     auto  it        = block_ref.events_.find(cmd.name());
     if (it != block_ref.events_.end()) {
       if (!std::invoke((*it).second.cbk_, &obj, ctx, cmd))
-        return k_failure;
+        return {k_failure, false};
       if (cmd.is_scoped())
-        return (*it).second.sub_handlers_;
-      return block;
+        block = (*it).second.sub_handlers_;
     } else {
       if (!std::invoke(block_ref.any_, &obj, ctx, cmd))
-        return k_failure;
+        return {k_failure, false};
     }
-    return block;
+    return {block, is_scoped(block)};
   }
 
   std::uint32_t get_region_root(std::string_view name) const {
@@ -99,7 +105,8 @@ public:
                              &callback_type::do_nothing) {
 
     return internal_add_command(parent_scope, cmd,
-                                static_cast<command_handler_fn>(callback));
+                                static_cast<command_handler_fn>(callback),
+                                false, nullptr, nullptr);
   }
 
   /// A scoped command registration
@@ -143,12 +150,17 @@ private:
       command_handler_fn callback = &command_handler::do_nothing,
       bool is_scoped = false, block_scope_fn begin = &command_handler::no_scope,
       block_scope_fn end = &command_handler::no_scope) {
+
     assert(parent_scope < blocks_.size());
     auto&         block_ref = blocks_[parent_scope];
     std::uint32_t id        = 0xffffffff;
     if (is_scoped) {
-      id = static_cast<std::uint32_t>(blocks_.size());
-      blocks_.resize(blocks_.size() + 1);
+      if (cmd == "*") {
+        id = parent_scope;
+      } else {
+        id = static_cast<std::uint32_t>(blocks_.size());
+        blocks_.resize(blocks_.size() + 1);
+      }
       blocks_[id].name_  = cmd;
       blocks_[id].begin_ = begin;
       blocks_[id].end_   = end;

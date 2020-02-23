@@ -16,6 +16,7 @@ ExternalProject_Add(Catch2
 )
 
 
+
 ## Basic tests
 macro(validity_test test_name definitions compile_flags link_options)
   add_executable(neotest-validity-${test_name} 
@@ -50,3 +51,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 validity_test("cpp" "" "${NEO_COMMON_CXX_FLAGS}" "${NEO_COMMON_CXX_LINK_FLAGS}")
+add_custom_command(TARGET neotest-validity-cpp PRE_BUILD 
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/dataset ${CMAKE_BINARY_DIR}/dataset
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected ${CMAKE_BINARY_DIR}/expected
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/output)
