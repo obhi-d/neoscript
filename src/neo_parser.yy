@@ -75,21 +75,21 @@ YY_DECL;
 
 %%
 /*============================================================================*/
-script: statement                          { }
-		| statement script                 { }
+script: statement           
+		| statement script      
 
-statement:                                       {                                                         }
-		| SEMICOLON                              {                                                         }
+statement:                                   
+		| SEMICOLON                              
 		| REGION_ID                              { _.start_region(std::move($1));                          }
 		| commanddecl                            { _.consume(std::move($1));                               }
 		| templatedecl                           { _.add_template(std::move($1));                          }
 		| instancedecl                           { _.consume(std::move($1));                               }
 		| RBRACKET                               { _.end_block();                                          }
 		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT IDENTIFIER SEMICOLON            { _.import_script(std::move($2));                         }
+		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                         }
 
 
-template_args.0.N:			{}
+template_args.0.N:			
 					| IDENTIFIER	{ 
 						std::vector<std::string> args; 
 						args.push_back($1); 
@@ -111,21 +111,21 @@ templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
 				     }
 				;
 
-commanddecl: SEMICOLON                          {  }
+commanddecl: SEMICOLON                          
 		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = _.make_command(std::move($1), std::move($2)); }
 		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = _.make_command(std::move($1), std::move($2), true); }
 		 
 instancedecl: INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
 		 | INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
 
-parameters.0.N:                       { }
+parameters.0.N:                       
 				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }
 				  | parameters.0.N LBRACES special_parameters.0.N RBRACES { 
 							$1.append_expanded(std::move($3)); $$ = std::move($1); 
 						}
 				  ;
 
-special_parameters.0.N:            {  }
+special_parameters.0.N:            
 			| special_parameter       { 
 					command::list l; 
 					l.emplace_back(std::move($1)); 
@@ -160,7 +160,7 @@ list: parameter					  { $$ = std::move($1); }
 	| special_parameter			{ $$ = std::move($1); }
     ;
 	
-list.0.N:								{ }
+list.0.N:								
 		|  list                         { 
 				command::list list; 
 				list.emplace_back(std::move($1)); 
@@ -191,7 +191,13 @@ void parser_impl::error(location_type const& l,
 void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) {
 	auto restore_file = current_file_;
 	current_file_ = ifile;
+	auto restore_source_name = source_name_;
 	source_name_ = src_name;
+	auto restore_loc = loc_;
+	loc_ = location_type();
+	loc_.source_name = &source_name_;
+	void* restore_scanner = scanner;
+	scanner = nullptr;
 	start_region("");
 	begin_scan();
 	parser_impl parser(*this);
@@ -199,6 +205,9 @@ void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& if
 	int res = parser.parse();
 	end_scan();
 	current_file_ = restore_file;
+	source_name_ = restore_source_name;
+	loc_ = restore_loc;
+	scanner = restore_scanner;
 }
 
 }

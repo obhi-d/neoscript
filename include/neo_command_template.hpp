@@ -17,6 +17,7 @@ public:
     command_record& operator=(command_record const&) = default;
     command_record& operator=(command_record&&) = default;
     command_record(neo::command&& cmd) : cmd_(std::move(cmd)) {}
+    command_record(neo::command const& cmd) : cmd_(cmd) {}
   };
 
   struct template_record {

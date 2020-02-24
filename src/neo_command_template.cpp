@@ -9,7 +9,7 @@ void command_template::record::visit(neo::context& ctx, bool extend) const {
     return;
   std::visit(
       overloaded{[&ctx](auto const& oth) {},
-                 [&ctx](template_record const& rec) { ctx.add_template(rec); },
+                 [&ctx](template_record const& rec) { ctx.add_template(template_record(rec)); },
                  [&ctx](command_record const& rec) {
                    command cmd = rec.cmd_;
                    ctx.consume(std::move(cmd));
@@ -39,7 +39,17 @@ void command_template::record::visit(neo::context& ctx, bool extend) const {
              node_);
 }
 void command_template::visit(neo::context& ctx, bool extend) const {
-  main_.visit(ctx, extend);
+  assert(main_.node_.index() == 2);
+  template_record const& rec = std::get<template_record>(main_.node_);
+  command                cmd = rec.cmd_;
+  ctx.consume(std::move(cmd));
+  if (main_.sub_.size() > 0) {
+    for (auto const& e : main_.sub_) {
+      e.visit(ctx, false);
+    }
+    if (!extend)
+      ctx.end_block();
+  }
 }
 
 } // namespace neo

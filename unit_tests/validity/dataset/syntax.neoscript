@@ -42,7 +42,7 @@ templ {
 	print Msg;
 }
 
-invoke templ<"Hello">;
+invoke Echo<"Hello">;
 
 template <Msg>
 templ2 {
@@ -51,8 +51,7 @@ templ2 {
 
 invoke templ2<"World">;
 
-
-template T<A, B, C>
+template <A, B, C>
 templ3 {
 	print A;
 	print B C;

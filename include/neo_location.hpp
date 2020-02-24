@@ -25,7 +25,10 @@ class location {
 public:
   void step() { begin = end; }
   void columns(std::uint32_t l) { end.character += l; }
-  void lines(std::uint32_t l) { end.character += l; }
+  void lines(std::uint32_t l) {
+    end.line += l;
+    end.character = 0;
+  }
 
   bool operator==(location const& p) const {
     return p.begin == begin && p.end == end;

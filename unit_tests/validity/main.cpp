@@ -25,26 +25,43 @@ struct fileout_command_handler : public neo::command_handler {
       file << to_string(val);
     }
     file << ")\n";
+    last_cmd = cmd.name();
     return true;
   }
 
   bool enter_scope(neo::context const&, std::string_view name) {
+    scope += last_cmd;
     scope += '/';
-    scope += name;
     return true;
   }
 
   bool leave_scope(neo::context const&, std::string_view name) {
+    scope.pop_back();
     std::size_t pos = scope.find_last_of('/');
-    assert(pos != std::string::npos);
-    assert(std::string_view(scope).substr(pos + 1) == name);
+    if (pos == std::string::npos)
+      pos = 0;
+    else
+      pos++;
     scope.erase(pos, scope.length() - pos);
     return true;
   }
 
   std::ofstream file;
   std::string   scope;
+  std::string   last_cmd;
 };
+
+bool compare_expected(std::string const& name) {
+  std::ifstream f1("../output/" + name);
+  std::ifstream f2("../expected/" + name);
+
+  if (f1.fail() || f2.fail()) {
+    return false; // file problem
+  }
+  return std::equal(std::istreambuf_iterator<char>(f1.rdbuf()),
+                    std::istreambuf_iterator<char>(),
+                    std::istreambuf_iterator<char>(f2.rdbuf()));
+}
 
 TEST_CASE("Validate syntax files", "[file]") {
   namespace fs = std::filesystem;
@@ -60,6 +77,9 @@ TEST_CASE("Validate syntax files", "[file]") {
     auto                          path = p.path();
     fileout_command_handler       handler(path.filename().generic_string());
     neo::context                  context(test_interpreter, handler, 0);
+    context.set_import_handler([](std::string const& name) {
+      return std::make_shared<std::ifstream>("../dataset/" + name);
+    });
     std::shared_ptr<std::istream> iss = std::make_shared<std::ifstream>(path);
     context.parse(path.filename().generic_string(), iss);
     if (context.fail_bit()) {
@@ -69,6 +89,8 @@ TEST_CASE("Validate syntax files", "[file]") {
         std::cerr << "        " << err << std::endl;
       });
     }
+    std::cout << "[INFO] " << path.filename().generic_string() << std::endl;
     REQUIRE(!context.fail_bit());
+    REQUIRE(compare_expected(path.filename().generic_string()));
   }
 }

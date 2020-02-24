@@ -152,7 +152,6 @@ private:
       block_scope_fn end = &command_handler::no_scope) {
 
     assert(parent_scope < blocks_.size());
-    auto&         block_ref = blocks_[parent_scope];
     std::uint32_t id        = 0xffffffff;
     if (is_scoped) {
       if (cmd == "*") {
@@ -165,6 +164,7 @@ private:
       blocks_[id].begin_ = begin;
       blocks_[id].end_   = end;
     }
+    auto& block_ref = blocks_[parent_scope];
     if (cmd == "*")
       block_ref.any_ = callback;
     else
@@ -233,8 +233,6 @@ private:
 
   std::unordered_map<std::string_view, std::uint32_t> reg_block_mappings_;
   /// block 0 is always the root
-  command_handler_fn begin_block_;
-  command_handler_fn end_block_;
   std::vector<block> blocks_;
 };
 using interpreter_id = std::uint32_t;

@@ -139,7 +139,7 @@ void context::end_block() {
 void context::start_region(std::string&& region_id, std::string&& content) {
   text_regions_.emplace(std::move(region_id), std::move(content));
 }
-void context::import_script(std::string&& file_id) {
+void context::import_script(std::string const& file_id) {
   auto file = importer_(file_id);
   parse(file_id, file);
 }

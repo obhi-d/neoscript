@@ -173,7 +173,7 @@ TEST_CASE("Block test", "[block]") {
                                       &test_command_handler::generate);
 
   test_command_handler handler;
-  neo::context context(test_interpreter, handler, neo::context::f_trace_parse);
+  neo::context context(test_interpreter, handler, 0);
   context.parse("memory", iss);
   if (context.fail_bit()) {
     std::cerr << "[ERROR] While compiling [block]" << std::endl;
