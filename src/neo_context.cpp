@@ -42,74 +42,41 @@ void context::consume(neo::command&& cmd) {
   }
 }
 void context::add_template(neo::command_template&& cmd_templ) {
+  root_template_storage_.emplace_front(std::move(cmd_templ));
+  record_template(root_template_storage_.front());
+}
+void context::record_template(neo::command_template& cmd_templ) {
   if (record_stack_.size() == 0) {
-    neo::command_template::record* new_rec = nullptr;
-    auto                           it      = templates_.find(cmd_templ.name());
-    if (it != templates_.end()) {
-      if ((*it).second.index() == 0) {
-        neo::command_template& templ =
-            std::get<neo::command_template>((*it).second);
-        (*it).second = std::move(std::vector<neo::command_template>{
-            std::move(templ), std::move(cmd_templ)});
-      } else {
-        std::vector<neo::command_template>& v =
-            std::get<std::vector<neo::command_template>>((*it).second);
-        v.emplace_back(std::move(cmd_templ));
-      }
-      std::vector<neo::command_template>& v =
-          std::get<std::vector<neo::command_template>>((*it).second);
-      new_rec = &v.back().main_;
-    } else {
-      auto                   it = templates_.emplace(cmd_templ.name(),
-                                   templ_one_many(std::move(cmd_templ)));
-      neo::command_template& templ =
-          std::get<neo::command_template>((*it.first).second);
-      new_rec = &templ.main_;
-    }
-    record_stack_.push_back(new_rec);
+    record_ptr new_rec   = &(cmd_templ.main_);
+    bool       is_scoped = cmd_templ.is_scoped();
+    templates_[cmd_templ.name()].emplace_back(std::cref(cmd_templ));
+
+    if (is_scoped)
+      record_stack_.push_back(new_rec);
   } else {
     bool scoped = cmd_templ.is_scoped();
     auto rec    = record_stack_.back();
-    rec->sub_.push_back(std::move(cmd_templ.main_));
+    // TODO
+    // We need a DOM
+    rec->sub_.emplace_back(std::cref(cmd_templ));
     if (scoped)
-      record_stack_.push_back(&rec->sub_.back());
+      record_stack_.push_back(&cmd_templ.main_);
   }
 }
-void context::add_template(neo::command_template::template_record&& cmd_templ) {
-  auto it = templates_.find(cmd_templ.name_);
-  if (it != templates_.end()) {
-    if ((*it).second.index() == 0) {
-      neo::command_template& templ =
-          std::get<neo::command_template>((*it).second);
-      (*it).second = std::move(std::vector<neo::command_template>{
-          std::move(templ), neo::command_template(std::move(cmd_templ))});
-    } else {
-      std::vector<neo::command_template>& v =
-          std::get<std::vector<neo::command_template>>((*it).second);
-      v.emplace_back(std::move(cmd_templ));
-    }
-  } else {
-    auto it = templates_.emplace(
-        cmd_templ.name_,
-        templ_one_many(neo::command_template(std::move(cmd_templ))));
-  }
+void context::push_template(neo::command_template const& 
+                                cmd_templ) {
+  templates_[cmd_templ.name()].emplace_back(std::cref(cmd_templ));
 }
 void context::remove_template(std::string const& name) {
   auto it = templates_.find(name);
   if (it != templates_.end()) {
-    if ((*it).second.index() == 0) {
-      templates_.erase(it);
-    } else {
-      std::vector<neo::command_template>& v =
-          std::get<std::vector<neo::command_template>>((*it).second);
-      v.pop_back();
-    }
+    it->second.pop_back();
   }
 }
 void context::consume(neo::command_instance&& cmd_inst) {
   if (record_stack_.size() > 0) {
-    bool scoped = cmd_inst.is_extended();
-    auto rec    = record_stack_.back();
+    bool  scoped = cmd_inst.is_extended();
+    auto& rec    = record_stack_.back();
     rec->sub_.emplace_back(
         command_template::instance_record(std::move(cmd_inst)));
     if (scoped)

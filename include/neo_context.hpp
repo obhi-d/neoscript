@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <forward_list>
 
 namespace neo {
 class interpreter;
@@ -33,7 +34,8 @@ public:
   void start_region(std::string&&);
   void consume(neo::command&& cmd);
   void add_template(neo::command_template&&);
-  void add_template(neo::command_template::template_record&&);
+  void push_template(neo::command_template const&);
+  void record_template(neo::command_template&);
   void remove_template(std::string const&);
   void consume(neo::command_instance&&);
   void end_block();
@@ -76,13 +78,7 @@ public:
   neo::command_template const& find_template(std::string const& name) {
     auto it = templates_.find(name);
     if (it != templates_.end()) {
-      if ((*it).second.index() == 0)
-        return std::get<command_template>((*it).second);
-      else {
-        std::vector<neo::command_template>& v =
-            std::get<std::vector<neo::command_template>>((*it).second);
-        return v.back();
-      }
+      return it->second.back().get();
     } else {
       push_error(loc(), "template not found: " + name);
       return null_template_;
@@ -115,18 +111,21 @@ public:
   }
 
 private:
+  using record_ptr = neo::command_template::record*;
   static std::shared_ptr<std::istream> default_import_handler(
       std::string const&);
 
-  using templ_one_many =
-      std::variant<neo::command_template, std::vector<neo::command_template>>;
-  using template_map    = std::unordered_map<std::string, templ_one_many>;
+  using push_templates = std::vector<std::reference_wrapper<neo::command_template const>>;
+  using template_map = std::unordered_map<std::string, push_templates>;
   using text_region_map = std::unordered_map<std::string, std::string>;
+  using root_template_list = std::forward_list<neo::command_template>;
+
   template_map                                templates_;
   text_region_map                             text_regions_;
   std::vector<std::uint32_t>                  block_stack_;
-  std::vector<neo::command_template::record*> record_stack_;
+  std::vector<record_ptr>                     record_stack_;
   std::vector<std::string>                    errors_;
+  root_template_list                          root_template_storage_;
   interpreter&                                interpreter_;
   command_handler&                            cmd_handler_;
   resolver*                                   resolver_stack_ = nullptr;

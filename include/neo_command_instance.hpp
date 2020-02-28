@@ -11,7 +11,9 @@ class command_template;
 class command_instance {
 public:
   command_instance()                            = default;
-  command_instance(command_instance const&)     = default;
+  command_instance(command_instance const& _)
+      : template_(_.template_), param_list_(_.param_list_),
+        param_map_(_.param_map_), is_extended_(_.is_extended_){}
   command_instance(command_instance&&) noexcept = default;
   command_instance& operator=(command_instance const&) = default;
   command_instance& operator=(command_instance&&) noexcept = default;

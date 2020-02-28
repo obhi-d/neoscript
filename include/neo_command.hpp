@@ -16,9 +16,9 @@ class command {
 public:
   class single {
   public:
-    single()              = default;
-    single(single const&) = default;
-    single(single&&)      = default;
+    single() = default;
+    single(single const& _) : name_(_.name_), value_(_.value_) {}
+    single(single&&) = default;
 
     single(std::string_view value) : value_(value) {}
     single(std::string const& value) : value_(value) {}
@@ -28,7 +28,11 @@ public:
     single(std::string&& name, std::string&& value)
         : name_(std::move(name)), value_(std::move(value)) {}
 
-    single& operator=(single const&) = default;
+    single& operator=(single const& _) {
+      name_  = _.name_;
+      value_ = _.value_;
+      return *this;
+    }
     single& operator=(single&&) = default;
 
     void set_name(std::string&& name) { name_ = std::move(name); }
@@ -44,11 +48,15 @@ public:
 
   class list {
   public:
-    list()            = default;
-    list(list const&) = default;
-    list(list&&)      = default;
+    list() = default;
+    list(list const& _) : value_(_.value_), name_(_.name_) {}
+    list(list&&) = default;
 
-    list& operator=(list const&) = default;
+    list& operator=(list const& _) {
+      value_ = _.value_;
+      name_  = _.name_;
+      return *this;
+    }
     list& operator=(list&&) = default;
 
     using node           = std::variant<std::monostate, single, list>;
@@ -107,11 +115,14 @@ public:
   }
 
   struct parameters {
-    parameters()                  = default;
-    parameters(parameters const&) = default;
-    parameters(parameters&&)      = default;
+    parameters() = default;
+    parameters(parameters const& _) : value_(_.value_) {}
+    parameters(parameters&&) = default;
 
-    parameters& operator=(parameters const&) = default;
+    parameters& operator=(parameters const& _) {
+      value_ = _.value_;
+      return *this;
+    }
     parameters& operator=(parameters&&) = default;
 
     inline void append(param_t&& i_param) noexcept {
@@ -142,9 +153,18 @@ public:
   };
 
   command() noexcept = default;
+  command(command const& _)
+      : name_(_.name_), params_(_.params_), scoped_(_.scoped_) {}
+  command(command&&) noexcept = default;
   command(std::string&& name, parameters&& params, bool scoped) noexcept
       : name_(std::move(name)), params_(std::move(params)), scoped_(scoped) {}
 
+  command& operator=(command const& _) {
+    name_   = _.name_;
+    params_ = _.params_;
+    scoped_ = _.scoped_;
+    return *this;
+  }
   std::string_view  name() const { return name_; }
   parameters const& params() const { return params_; }
   parameters&       params() { return params_; }

@@ -1,2 +1,19 @@
 template Decl<One> Command One;
 
+template Templ1<Param1, Param2> First {
+
+  template Templ1<Param1, Param2> Second {
+  
+    template Templ1<Param1, Param2> Third {      
+      Func1 Call Param1;
+      Func2 Call Param2;
+    }
+
+    Func3 Call Param1;
+    invoke Templ1<Hey, Jude>;
+  };
+
+  invoke Templ1<Dont, Make>;
+};
+
+invoke Templ1<It, Bad>;

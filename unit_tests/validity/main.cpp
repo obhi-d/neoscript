@@ -58,9 +58,12 @@ bool compare_expected(std::string const& name) {
   if (f1.fail() || f2.fail()) {
     return false; // file problem
   }
-  return std::equal(std::istreambuf_iterator<char>(f1.rdbuf()),
-                    std::istreambuf_iterator<char>(),
-                    std::istreambuf_iterator<char>(f2.rdbuf()));
+  std::string f1_str((std::istreambuf_iterator<char>(f1)),
+                  std::istreambuf_iterator<char>());
+  std::string f2_str((std::istreambuf_iterator<char>(f2)),
+                     std::istreambuf_iterator<char>());
+
+  return f1_str == f2_str;
 }
 
 TEST_CASE("Validate syntax files", "[file]") {
@@ -90,7 +93,7 @@ TEST_CASE("Validate syntax files", "[file]") {
       });
     }
     std::cout << "[INFO] " << path.filename().generic_string() << std::endl;
-    REQUIRE(!context.fail_bit());
-    REQUIRE(compare_expected(path.filename().generic_string()));
+    CHECK(!context.fail_bit());
+    CHECK(compare_expected(path.filename().generic_string()));
   }
 }

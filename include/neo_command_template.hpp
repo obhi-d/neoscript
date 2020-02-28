@@ -5,16 +5,18 @@
 #include <vector>
 
 namespace neo {
-
 class context;
 class command_template {
 public:
   struct command_record {
     neo::command cmd_;
-    command_record()                      = default;
-    command_record(command_record const&) = default;
-    command_record(command_record&&)      = default;
-    command_record& operator=(command_record const&) = default;
+    command_record() = default;
+    command_record(command_record const& _) : cmd_(_.cmd_) {}
+    command_record(command_record&&) = default;
+    command_record& operator         =(command_record const& _) {
+      cmd_ = _.cmd_;
+      return *this;
+    }
     command_record& operator=(command_record&&) = default;
     command_record(neo::command&& cmd) : cmd_(std::move(cmd)) {}
     command_record(neo::command const& cmd) : cmd_(cmd) {}
@@ -24,11 +26,17 @@ public:
     std::string              name_;
     neo::command             cmd_;
     std::vector<std::string> params_;
-    template_record()                       = default;
-    template_record(template_record&&)      = default;
-    template_record(template_record const&) = default;
+    template_record()                  = default;
+    template_record(template_record&&) = default;
+    template_record(template_record const& _)
+        : name_(_.name_), cmd_(_.cmd_), params_(_.params_) {}
     template_record& operator=(template_record&&) = default;
-    template_record& operator=(template_record const&) = default;
+    template_record& operator                     =(template_record const& _) {
+      name_   = _.name_;
+      cmd_    = _.cmd_;
+      params_ = _.params_;
+      return *this;
+    }
     template_record(std::string&& name, std::vector<std::string>&& vec,
                     neo::command&& cmd)
         : name_(std::move(name)), cmd_(std::move(cmd)),
@@ -37,21 +45,27 @@ public:
 
   struct instance_record {
     neo::command_instance instance_;
-    instance_record()                       = default;
-    instance_record(instance_record const&) = default;
-    instance_record(instance_record&&)      = default;
-    instance_record& operator=(instance_record const&) = default;
+    instance_record() = default;
+    instance_record(instance_record const& _) : instance_(_.instance_) {}
+    instance_record(instance_record&&) = default;
+    instance_record& operator          =(instance_record const& _) {
+      instance_ = _.instance_;
+      return *this;
+    }
     instance_record& operator=(instance_record&&) = default;
     instance_record(neo::command_instance&& cmd) : instance_(std::move(cmd)) {}
   };
 
+  using command_template_ref = std::reference_wrapper<command_template const>;
   using node = std::variant<std::monostate, command_record, template_record,
-                            instance_record>;
+                            instance_record, command_template_ref>;
   struct record {
     node                node_;
     std::vector<record> sub_;
 
-    void visit(neo::context&, bool extend) const;
+    void pre_visit(neo::context&) const;
+    void visit(neo::context&) const;
+    void post_visit(neo::context&) const;
 
     record() = default;
     record(record const& rec) : node_(rec.node_), sub_(rec.sub_) {}
@@ -66,8 +80,10 @@ public:
     record(command_record const& rec) : node_(rec) {}
     record(template_record&& rec) : node_(std::move(rec)) {}
     record(instance_record&& rec) : node_(std::move(rec)) {}
+    record(command_template_ref&& rec) : node_(std::move(rec)) {}
     record(template_record const& rec) : node_(rec) {}
     record(instance_record const& rec) : node_(rec) {}
+    record(command_template_ref const& rec) : node_(rec) {}
     record(std::string&& name, std::vector<std::string>&& params,
            neo::command&& cmd)
         : node_(std::in_place_type_t<template_record>{}, std::move(name),
@@ -84,6 +100,7 @@ public:
   command_template(std::string&& name, std::vector<std::string>&& params,
                    neo::command&& cmd)
       : main_(std::move(name), std::move(params), std::move(cmd)) {}
+  
   std::string const& name() const {
     return std::get<template_record>(main_.node_).name_;
   }
@@ -92,7 +109,8 @@ public:
     return std::get<template_record>(main_.node_).cmd_.is_scoped();
   }
 
-  void                            visit(neo::context&, bool extended) const;
+  void visit(neo::context&, bool extended) const;
+
   std::vector<std::string> const& get_params() const {
     return std::get<template_record>(main_.node_).params_;
   }
