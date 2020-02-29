@@ -1,4 +1,6 @@
 
 #include <neo_interpreter.hpp>
 
-namespace neo {}
+namespace neo
+{
+}

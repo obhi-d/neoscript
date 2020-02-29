@@ -4,16 +4,20 @@
 #include <variant>
 #include <vector>
 
-namespace neo {
+namespace neo
+{
 class context;
-class command_template {
+class command_template
+{
 public:
-  struct command_record {
+  struct command_record
+  {
     neo::command cmd_;
     command_record() = default;
     command_record(command_record const& _) : cmd_(_.cmd_) {}
     command_record(command_record&&) = default;
-    command_record& operator         =(command_record const& _) {
+    command_record& operator         =(command_record const& _)
+    {
       cmd_ = _.cmd_;
       return *this;
     }
@@ -22,16 +26,19 @@ public:
     command_record(neo::command const& cmd) : cmd_(cmd) {}
   };
 
-  struct template_record {
+  struct template_record
+  {
     std::string              name_;
     neo::command             cmd_;
     std::vector<std::string> params_;
     template_record()                  = default;
     template_record(template_record&&) = default;
     template_record(template_record const& _)
-        : name_(_.name_), cmd_(_.cmd_), params_(_.params_) {}
+        : name_(_.name_), cmd_(_.cmd_), params_(_.params_)
+    {}
     template_record& operator=(template_record&&) = default;
-    template_record& operator                     =(template_record const& _) {
+    template_record& operator                     =(template_record const& _)
+    {
       name_   = _.name_;
       cmd_    = _.cmd_;
       params_ = _.params_;
@@ -39,16 +46,18 @@ public:
     }
     template_record(std::string&& name, std::vector<std::string>&& vec,
                     neo::command&& cmd)
-        : name_(std::move(name)), cmd_(std::move(cmd)),
-          params_(std::move(vec)) {}
+        : name_(std::move(name)), cmd_(std::move(cmd)), params_(std::move(vec))
+    {}
   };
 
-  struct instance_record {
+  struct instance_record
+  {
     neo::command_instance instance_;
     instance_record() = default;
     instance_record(instance_record const& _) : instance_(_.instance_) {}
     instance_record(instance_record&&) = default;
-    instance_record& operator          =(instance_record const& _) {
+    instance_record& operator          =(instance_record const& _)
+    {
       instance_ = _.instance_;
       return *this;
     }
@@ -59,7 +68,8 @@ public:
   using command_template_ref = std::reference_wrapper<command_template const>;
   using node = std::variant<std::monostate, command_record, template_record,
                             instance_record, command_template_ref>;
-  struct record {
+  struct record
+  {
     node                node_;
     std::vector<record> sub_;
 
@@ -71,7 +81,8 @@ public:
     record(record const& rec) : node_(rec.node_), sub_(rec.sub_) {}
 
     record& operator=(record&&) = default;
-    record& operator            =(record const& rec) {
+    record& operator            =(record const& rec)
+    {
       node_ = rec.node_;
       sub_  = rec.sub_;
       return *this;
@@ -87,7 +98,8 @@ public:
     record(std::string&& name, std::vector<std::string>&& params,
            neo::command&& cmd)
         : node_(std::in_place_type_t<template_record>{}, std::move(name),
-                std::move(params), std::move(cmd)) {}
+                std::move(params), std::move(cmd))
+    {}
   };
 
   command_template()                        = default;
@@ -99,19 +111,23 @@ public:
   command_template(template_record const& rec) : main_(rec) {}
   command_template(std::string&& name, std::vector<std::string>&& params,
                    neo::command&& cmd)
-      : main_(std::move(name), std::move(params), std::move(cmd)) {}
-  
-  std::string const& name() const {
+      : main_(std::move(name), std::move(params), std::move(cmd))
+  {}
+
+  std::string const& name() const
+  {
     return std::get<template_record>(main_.node_).name_;
   }
 
-  bool is_scoped() const {
+  bool is_scoped() const
+  {
     return std::get<template_record>(main_.node_).cmd_.is_scoped();
   }
 
   void visit(neo::context&, bool extended) const;
 
-  std::vector<std::string> const& get_params() const {
+  std::vector<std::string> const& get_params() const
+  {
     return std::get<template_record>(main_.node_).params_;
   }
 

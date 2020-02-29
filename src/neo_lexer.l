@@ -156,14 +156,17 @@ BLANK   [ \t]
 
 %%
 
-namespace neo {
+namespace neo 
+{
 
-void context::begin_scan() {
+void context::begin_scan() 
+{
   neo_lex_init_extra(this, &scanner);
   neo_set_debug(flags_ & f_trace_scan, scanner);
 }
 
-void context::end_scan() {
+void context::end_scan() 
+{
   neo_lex_destroy(scanner);
 }
 

@@ -9,12 +9,14 @@
 #include <variant>
 #include <vector>
 
-namespace neo {
-
+namespace neo
+{
 /// Parameter Layout
-class command {
+class command
+{
 public:
-  class single {
+  class single
+  {
   public:
     single() = default;
     single(single const& _) : name_(_.name_), value_(_.value_) {}
@@ -24,11 +26,14 @@ public:
     single(std::string const& value) : value_(value) {}
     single(std::string&& value) : value_(std::move(value)) {}
     single(std::string const& name, std::string const& value)
-        : name_(name), value_(value) {}
+        : name_(name), value_(value)
+    {}
     single(std::string&& name, std::string&& value)
-        : name_(std::move(name)), value_(std::move(value)) {}
+        : name_(std::move(name)), value_(std::move(value))
+    {}
 
-    single& operator=(single const& _) {
+    single& operator=(single const& _)
+    {
       name_  = _.name_;
       value_ = _.value_;
       return *this;
@@ -46,13 +51,15 @@ public:
     std::string value_;
   };
 
-  class list {
+  class list
+  {
   public:
     list() = default;
     list(list const& _) : value_(_.value_), name_(_.name_) {}
     list(list&&) = default;
 
-    list& operator=(list const& _) {
+    list& operator=(list const& _)
+    {
       value_ = _.value_;
       name_  = _.name_;
       return *this;
@@ -72,7 +79,8 @@ public:
     void set_name(std::string&& name) noexcept { name_ = std::move(name); }
     void set_value(std::string&&) noexcept {}
 
-    void emplace_back(node&& i_param) noexcept {
+    void emplace_back(node&& i_param) noexcept
+    {
       value_.emplace_back(std::move(i_param));
     }
 
@@ -90,22 +98,27 @@ public:
 
   using param_t = list::node;
 
-  struct resolver {
+  struct resolver
+  {
     std::function<std::optional<param_t>(std::string_view name,
                                          std::string_view value)>
               op_;
     resolver* next_ = nullptr;
   };
 
-  static void inline resolve(resolver const* stack, list::vector& vec) {
+  static void inline resolve(resolver const* stack, list::vector& vec)
+  {
     for (auto& e : vec)
       std::visit(overloaded{[](std::monostate&) {},
                             [&stack](list& l) { resolve(stack, l.value()); },
-                            [&stack, &e](single& s) {
-                              for (auto it = stack; it; it = it->next_) {
+                            [&stack, &e](single& s)
+                            {
+                              for (auto it = stack; it; it = it->next_)
+                              {
                                 std::optional<list::node> res =
                                     it->op_(s.name(), s.value());
-                                if (res) {
+                                if (res)
+                                {
                                   e = res.value();
                                   break;
                                 }
@@ -114,36 +127,43 @@ public:
                  e);
   }
 
-  struct parameters {
+  struct parameters
+  {
     parameters() = default;
     parameters(parameters const& _) : value_(_.value_) {}
     parameters(parameters&&) = default;
 
-    parameters& operator=(parameters const& _) {
+    parameters& operator=(parameters const& _)
+    {
       value_ = _.value_;
       return *this;
     }
     parameters& operator=(parameters&&) = default;
 
-    inline void append(param_t&& i_param) noexcept {
+    inline void append(param_t&& i_param) noexcept
+    {
       value_.emplace_back(std::move(i_param));
     }
-    inline void append_expanded(param_t&& i_param) noexcept {
-      if (i_param.index() == 2) {
+    inline void append_expanded(param_t&& i_param) noexcept
+    {
+      if (i_param.index() == 2)
+      {
         list& l = std::get<list>(i_param);
         value_.reserve(value_.size() + l.count());
         value_.insert(value_.end(), l.begin(), l.end());
-      } else
+      }
+      else
         value_.emplace_back(std::move(i_param));
     }
-    inline void resolve(resolver const* stack) noexcept {
+    inline void resolve(resolver const* stack) noexcept
+    {
       command::resolve(stack, value_);
     }
-    static void set_name(param_t& _, std::string&& name) noexcept {
-      std::visit(
-          overloaded{[](std::monostate& s) {},
-                     [&name](auto& other) { other.set_name(std::move(name)); }},
-          _);
+    static void set_name(param_t& _, std::string&& name) noexcept
+    {
+      std::visit(overloaded{[](std::monostate& s) {}, [&name](auto& other)
+                            { other.set_name(std::move(name)); }},
+                 _);
     }
 
     list::vector&       value() noexcept { return value_; }
@@ -154,12 +174,15 @@ public:
 
   command() noexcept = default;
   command(command const& _)
-      : name_(_.name_), params_(_.params_), scoped_(_.scoped_) {}
+      : name_(_.name_), params_(_.params_), scoped_(_.scoped_)
+  {}
   command(command&&) noexcept = default;
   command(std::string&& name, parameters&& params, bool scoped) noexcept
-      : name_(std::move(name)), params_(std::move(params)), scoped_(scoped) {}
+      : name_(std::move(name)), params_(std::move(params)), scoped_(scoped)
+  {}
 
-  command& operator=(command const& _) {
+  command& operator=(command const& _)
+  {
     name_   = _.name_;
     params_ = _.params_;
     scoped_ = _.scoped_;
@@ -181,5 +204,4 @@ private:
 };
 
 using resolver = neo::command::resolver;
-
 } // namespace neo

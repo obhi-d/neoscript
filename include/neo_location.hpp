@@ -3,39 +3,48 @@
 #include <ostream>
 #include <string>
 
-namespace neo {
+namespace neo
+{
 
-struct position {
+struct position
+{
   std::uint32_t line      = 0;
   std::uint32_t character = 0;
-  friend bool   operator==(position const& first, position const& second) {
+  friend bool   operator==(position const& first, position const& second)
+  {
     return first.line == second.line && first.character == second.character;
   }
-  friend bool operator!=(position const& first, position const& second) {
+  friend bool operator!=(position const& first, position const& second)
+  {
     return !(first == second);
   }
 
-  friend std::ostream& operator<<(std::ostream& yyo, position const& l) {
+  friend std::ostream& operator<<(std::ostream& yyo, position const& l)
+  {
     yyo << l.line << ':' << l.character;
     return yyo;
   }
 };
 
-class location {
+class location
+{
 public:
   void step() { begin = end; }
   void columns(std::uint32_t l) { end.character += l; }
-  void lines(std::uint32_t l) {
+  void lines(std::uint32_t l)
+  {
     end.line += l;
     end.character = 0;
   }
 
-  bool operator==(location const& p) const {
+  bool operator==(location const& p) const
+  {
     return p.begin == begin && p.end == end;
   }
   bool operator!=(location const& p) const { return !(*this == p); }
 
-  inline operator std::string() const {
+  inline operator std::string() const
+  {
     std::string value = source_name ? *source_name : "buffer";
     value += "(" + std::to_string(begin.line) + ":" +
              std::to_string(begin.character) + "-" + std::to_string(end.line) +
@@ -43,7 +52,8 @@ public:
     return value;
   }
 
-  friend std::ostream& operator<<(std::ostream& yyo, location const& l) {
+  friend std::ostream& operator<<(std::ostream& yyo, location const& l)
+  {
     std::string value = l.source_name ? *l.source_name : "buffer";
     if (l.begin == l.end)
       yyo << "<" << value << '-' << l.begin << ">";

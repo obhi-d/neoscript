@@ -66,14 +66,13 @@ if(BUILD_TESTING AND NEOSCRIPT_BUILD_TESTS)
     add_subdirectory(unit_tests)
 endif()
 
-##
-## INSTALL
-##
-## install(TARGETS ${PROJECT_NAME}
-##       EXPORT ${PROJECT_NAME}_Targets
-##        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-##        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-##        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# INSTALL
+
+install(TARGETS ${PROJECT_NAME}
+      EXPORT ${PROJECT_NAME}_Targets
+       ARCHIVE DESTINATION lib
+       )
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
@@ -99,4 +98,3 @@ if(DEFINED CMAKE_INSTALL_DATAROOTDIR)
 endif()
 
 install(DIRECTORY include DESTINATION .)
-

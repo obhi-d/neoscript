@@ -181,14 +181,17 @@ list.0.N:
 %%
 /*============================================================================*/
 
-namespace neo {
+namespace neo 
+{
 
 void parser_impl::error(location_type const& l,
-												std::string const & e) {
+												std::string const & e) 
+{
   _.push_error(l, e.c_str());
 }
 
-void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) {
+void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) 
+{
 	auto restore_file = current_file_;
 	current_file_ = ifile;
 	auto restore_source_name = source_name_;
