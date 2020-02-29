@@ -7,7 +7,7 @@
 
 namespace neo
 {
-struct command_handler
+struct NEO_API command_handler
 {
   static bool do_nothing(command_handler* obj, neo::context const&,
                          neo::command const&)
@@ -27,7 +27,7 @@ using block_scope_fn     = bool (*)(command_handler* obj, neo::context const&,
 
 using command_id = std::uint32_t;
 
-class interpreter
+class NEO_API interpreter
 {
   struct block;
   struct handler
@@ -262,6 +262,7 @@ private:
     return root;
   }
 
+private:
   std::unordered_map<std::string_view, std::uint32_t> reg_block_mappings_;
   /// block 0 is always the root
   std::vector<block> blocks_;

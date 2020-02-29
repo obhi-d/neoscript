@@ -18,7 +18,7 @@ namespace neo
 class interpreter;
 struct command_handler;
 
-class context
+class NEO_API context
 {
 public:
   enum options
@@ -150,10 +150,11 @@ private:
   std::string                   region_;
   import_handler                importer_;
   std::shared_ptr<std::istream> current_file_;
-  static const command_template null_template_;
   std::string                   content_;
   std::string                   source_name_;
   location_type                 loc_;
   option_flags                  flags_ = 0;
+
+  static const command_template null_template_;
 };
 } // namespace neo

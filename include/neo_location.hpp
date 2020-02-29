@@ -2,11 +2,12 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <neo_common.hpp>
 
 namespace neo
 {
 
-struct position
+struct NEO_API position
 {
   std::uint32_t line      = 0;
   std::uint32_t character = 0;
@@ -26,7 +27,7 @@ struct position
   }
 };
 
-class location
+class NEO_API location
 {
 public:
   void step() { begin = end; }

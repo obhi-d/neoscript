@@ -7,10 +7,10 @@
 namespace neo
 {
 class context;
-class command_template
+class NEO_API command_template
 {
 public:
-  struct command_record
+  struct NEO_API command_record
   {
     neo::command cmd_;
     command_record() = default;
@@ -26,7 +26,7 @@ public:
     command_record(neo::command const& cmd) : cmd_(cmd) {}
   };
 
-  struct template_record
+  struct NEO_API template_record
   {
     std::string              name_;
     neo::command             cmd_;
@@ -50,7 +50,7 @@ public:
     {}
   };
 
-  struct instance_record
+  struct NEO_API instance_record
   {
     neo::command_instance instance_;
     instance_record() = default;
@@ -68,7 +68,7 @@ public:
   using command_template_ref = std::reference_wrapper<command_template const>;
   using node = std::variant<std::monostate, command_record, template_record,
                             instance_record, command_template_ref>;
-  struct record
+  struct NEO_API record
   {
     node                node_;
     std::vector<record> sub_;

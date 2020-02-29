@@ -4,6 +4,7 @@ project(neoscript VERSION 0.0.1 LANGUAGES CXX)
 
 
 option(NEOSCRIPT_BUILD_TESTS "Build the unit tests when BUILD_TESTING is enabled." ON)
+option(NEOSCRIPT_BUILD_STATIC "Build as static lib." ON)
 
 ##
 ## CONFIGURATION
@@ -35,7 +36,7 @@ add_custom_target(
 ## TARGET
 ##
 message("Target name: ${NEOSCRIPT_TARGET_NAME}")
-add_library(${NEOSCRIPT_TARGET_NAME} STATIC 
+add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
   src/neo_context.cpp
   src/neo_command_instance.cpp
   src/neo_command_template.cpp
@@ -43,6 +44,13 @@ add_library(${NEOSCRIPT_TARGET_NAME} STATIC
   ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp
 )
+
+target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
+
+if (NEOSCRIPT_BUILD_STATIC)
+  target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_STATIC_)
+endif(NEOSCRIPT_BUILD_STATIC)
+
 add_dependencies(${NEOSCRIPT_TARGET_NAME} ${NEOSCRIPT_TARGET_NAME}.PreBuild)
 add_library(${PROJECT_NAME}::${NEOSCRIPT_TARGET_NAME} ALIAS ${NEOSCRIPT_TARGET_NAME})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -72,6 +80,8 @@ endif()
 install(TARGETS ${PROJECT_NAME}
       EXPORT ${PROJECT_NAME}_Targets
        ARCHIVE DESTINATION lib
+       LIBRARY DESTINATION lib
+       RUNTIME DESTINATION lib
        )
 
 include(CMakePackageConfigHelpers)

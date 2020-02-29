@@ -9,7 +9,7 @@ namespace neo
 {
 class context;
 class command_template;
-class command_instance
+class NEO_API command_instance
 {
 public:
   command_instance() = default;
