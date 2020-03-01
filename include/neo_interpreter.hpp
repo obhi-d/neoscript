@@ -7,18 +7,8 @@
 
 namespace neo
 {
-struct NEO_API command_handler
+struct command_handler
 {
-  static bool do_nothing(command_handler* obj, neo::context const&,
-                         neo::command const&)
-  {
-    return true;
-  }
-  static bool no_scope(command_handler* obj, neo::context const&,
-                       std::string_view)
-  {
-    return true;
-  }
 };
 using command_handler_fn = bool (*)(command_handler* obj, neo::context const&,
                                     neo::command const&);
@@ -27,7 +17,7 @@ using block_scope_fn     = bool (*)(command_handler* obj, neo::context const&,
 
 using command_id = std::uint32_t;
 
-class NEO_API interpreter
+class interpreter
 {
   struct block;
   struct handler
@@ -54,28 +44,32 @@ public:
     k_failure = 0xffffffff
   };
 
-  interpreter()
+  inline interpreter()
   {
     reg_block_mappings_[""] = 0;
     blocks_.emplace_back();
   }
 
-  bool begin_scope(neo::context& ctx, command_handler& obj, std::uint32_t block)
+  inline bool begin_scope(neo::context& ctx, command_handler& obj,
+                          std::uint32_t block)
   {
-    return std::invoke(blocks_[block].begin_, &obj, ctx, blocks_[block].name_);
+    return blocks_[block].begin_ ? std::invoke(blocks_[block].begin_, &obj, ctx,
+                                            blocks_[block].name_) : true;
   }
 
-  bool end_scope(neo::context& ctx, command_handler& obj, std::uint32_t block)
+  inline bool end_scope(neo::context& ctx, command_handler& obj,
+                        std::uint32_t block)
   {
-    return std::invoke(blocks_[block].end_, &obj, ctx, blocks_[block].name_);
+    return blocks_[block].end_ ? std::invoke(blocks_[block].end_, &obj, ctx,
+                                          blocks_[block].name_) : true;
   }
 
-  bool is_scoped(std::uint32_t idx) const
+  inline bool is_scoped(std::uint32_t idx) const
   {
     return blocks_[idx].begin_ != nullptr;
   }
 
-  std::tuple<std::uint32_t, bool> execute(neo::context&    ctx,
+  inline std::tuple<std::uint32_t, bool> execute(neo::context&    ctx,
                                           command_handler& obj,
                                           std::uint32_t    block,
                                           neo::command&    cmd)
@@ -84,8 +78,11 @@ public:
     auto  it        = block_ref.events_.find(cmd.name());
     if (it != block_ref.events_.end())
     {
-      if (!std::invoke((*it).second.cbk_, &obj, ctx, cmd))
-        return {k_failure, false};
+      if ((*it).second.cbk_)
+      {
+        if (!std::invoke((*it).second.cbk_, &obj, ctx, cmd))
+          return {k_failure, false};
+      }
       if (cmd.is_scoped())
         block = (*it).second.sub_handlers_;
     }
@@ -97,7 +94,7 @@ public:
     return {block, is_scoped(block)};
   }
 
-  std::uint32_t get_region_root(std::string_view name) const
+  inline std::uint32_t get_region_root(std::string_view name) const
   {
     auto it = reg_block_mappings_.find(name);
     if (it != reg_block_mappings_.end())
@@ -105,7 +102,7 @@ public:
     return 0;
   } /// region type to block mapping
 
-  std::uint32_t ensure_region_root(std::string_view name)
+  inline std::uint32_t ensure_region_root(std::string_view name)
   {
     auto it = reg_block_mappings_.find(name);
     if (it != reg_block_mappings_.end())
@@ -117,9 +114,9 @@ public:
   } /// region type to block mapping
 
   /// A non scoped command registration
-  command_id add_command(
+  inline command_id add_command(
       command_id parent_scope, std::string_view cmd,
-      command_handler_fn callback = &command_handler::do_nothing)
+      command_handler_fn callback = nullptr)
   {
     return internal_add_command(parent_scope, cmd,
                                 static_cast<command_handler_fn>(callback),
@@ -127,11 +124,11 @@ public:
   }
 
   /// A scoped command registration
-  command_id add_scoped_command(
+  inline command_id add_scoped_command(
       command_id parent_scope, std::string_view cmd,
-      command_handler_fn callback    = &command_handler::do_nothing,
-      block_scope_fn     block_begin = &command_handler::no_scope,
-      block_scope_fn     block_end   = &command_handler::no_scope)
+      command_handler_fn callback    = nullptr,
+      block_scope_fn     block_begin = nullptr,
+                                       block_scope_fn     block_end   = nullptr)
   {
     return internal_add_command(parent_scope, cmd,
                                 static_cast<command_handler_fn>(callback), true,
@@ -150,7 +147,7 @@ public:
   /// To make all 'echo' command behave the same:
   /// @code alias_command("@/echo", "@second_reg/upper/echo");
   /// @code alias_command("@first_reg/echo", "@second_reg/upper/echo");
-  void alias_command(std::string_view src_path, std::string_view dst_path)
+  inline void alias_command(std::string_view src_path, std::string_view dst_path)
   {
     std::uint32_t par_block = find_parent_block(src_path);
     if (par_block == k_failure)
@@ -162,11 +159,11 @@ public:
 private:
   /// All sub-commands must be registred right after
   /// a parent command is registered
-  command_id internal_add_command(
+  inline command_id internal_add_command(
       command_id parent_scope, std::string_view cmd,
-      command_handler_fn callback = &command_handler::do_nothing,
-      bool is_scoped = false, block_scope_fn begin = &command_handler::no_scope,
-      block_scope_fn end = &command_handler::no_scope)
+      command_handler_fn callback = nullptr, bool is_scoped = false,
+      block_scope_fn begin = nullptr,
+                                         block_scope_fn     end       = nullptr)
   {
     assert(parent_scope < blocks_.size());
     std::uint32_t id = 0xffffffff;
@@ -193,7 +190,7 @@ private:
     return id;
   }
 
-  void internal_add_scope(command_id parent_scope, command_id new_scope,
+  inline void internal_add_scope(command_id parent_scope, command_id new_scope,
                           block_scope_fn begin, block_scope_fn end)
   {
     if (parent_scope >= blocks_.size())
@@ -203,7 +200,7 @@ private:
     auto& block_ref = blocks_[parent_scope];
   }
 
-  std::uint32_t find_parent_block(std::string_view& src_path) const
+  inline std::uint32_t find_parent_block(std::string_view& src_path) const
   {
     std::string_view src_reg = "";
     if (src_path[0] == '@')
@@ -230,7 +227,7 @@ private:
     return root;
   }
 
-  std::uint32_t build_parent_block(std::string_view& src_path)
+  inline std::uint32_t build_parent_block(std::string_view& src_path)
   {
     std::string_view src_reg = "";
     if (src_path[0] == '@')

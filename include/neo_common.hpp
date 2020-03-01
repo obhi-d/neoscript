@@ -1,7 +1,7 @@
 #pragma once
 #include <cassert>
 
-#ifndef NEO_EXPORT_STATIC_
+#ifdef NEO_DYN_LIB_
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef NEO_EXPORT_
 // Exporting...
