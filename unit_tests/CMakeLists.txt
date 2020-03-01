@@ -45,7 +45,6 @@ add_executable(neotest-validity
   add_dependencies(neotest-validity Catch2-install)
   target_include_directories(neotest-validity PRIVATE "${CMAKE_SOURCE_DIR}/out/external/install/include")
   target_include_directories(neotest-validity PRIVATE "${CMAKE_SOURCE_DIR}/include")
-  target_link_libraries(neotest-validity PRIVATE ${NEOSCRIPT_TARGET_NAME})
   target_compile_definitions(neotest-validity PRIVATE ${definitions})
   target_compile_options(neotest-validity PRIVATE ${compile_flags})
   target_compile_features(neotest-validity PRIVATE cxx_std_17)

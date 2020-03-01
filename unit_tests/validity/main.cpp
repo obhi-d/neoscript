@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_MAIN
+#define NEO_IMPLEMENT
 #include <catch2/catch.hpp>
 #include <filesystem>
 #include <fstream>

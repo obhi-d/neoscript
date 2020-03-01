@@ -15,6 +15,12 @@ namespace neo
 class NEO_API command
 {
 public:
+  enum
+  {
+    k_param_single = 1,
+    k_param_list   = 2
+  };
+
   class NEO_API single
   {
   public:
