@@ -32,7 +32,7 @@ public:
   using import_handler =
       std::function<std::shared_ptr<std::istream>(std::string const&)>;
 
-  context(interpreter& interp, command_handler& handler,
+  context(interpreter& interp, command_handler* handler,
           option_flags flags = 0);
   using location_type = neo::location;
 
@@ -114,19 +114,6 @@ public:
     return errors_.size() > 0 && !(flags_ & f_continue_on_error);
   }
 
-  std::string_view get_text_content(std::string const& name) const
-  {
-    auto it = text_regions_.find(name);
-    if (it != text_regions_.end())
-      return (*it).second;
-    return "";
-  }
-
-  std::string& get_text_content(std::string const& name)
-  {
-    return text_regions_[name];
-  }
-
 private:
   using record_ptr = neo::command_template::record*;
   static std::shared_ptr<std::istream> default_import_handler(
@@ -135,17 +122,15 @@ private:
   using push_templates =
       std::vector<std::reference_wrapper<neo::command_template const>>;
   using template_map       = std::unordered_map<std::string, push_templates>;
-  using text_region_map    = std::unordered_map<std::string, std::string>;
   using root_template_list = std::forward_list<neo::command_template>;
 
   template_map                  templates_;
-  text_region_map               text_regions_;
   std::vector<std::uint32_t>    block_stack_;
   std::vector<record_ptr>       record_stack_;
   std::vector<std::string>      errors_;
   root_template_list            root_template_storage_;
   interpreter&                  interpreter_;
-  command_handler&              cmd_handler_;
+  command_handler*              cmd_handler_;
   resolver*                     resolver_stack_ = nullptr;
   std::string                   region_;
   import_handler                importer_;

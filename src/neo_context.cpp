@@ -6,7 +6,7 @@ namespace neo
 {
 
 const command_template context::null_template_;
-context::context(interpreter& interp, command_handler& handler,
+context::context(interpreter& interp, command_handler* handler,
                  context::option_flags flags)
     : flags_(flags), importer_(&context::default_import_handler),
       interpreter_(interp), cmd_handler_(handler)
@@ -131,7 +131,8 @@ void context::end_block()
 }
 void context::start_region(std::string&& region_id, std::string&& content)
 {
-  text_regions_.emplace(std::move(region_id), std::move(content));
+  interpreter_.handle_text_region(cmd_handler_, *this, std::move(region_id),
+                                  std::move(content));
 }
 void context::import_script(std::string const& file_id)
 {

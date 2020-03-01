@@ -72,8 +72,9 @@ struct test_command_handler : public neo::command_handler
                                      {
                                        if (s.name() == "region")
                                        {
-                                         output =
-                                             ctx.get_text_content(s.value());
+                                         auto it = text.find(s.value());
+                                         if (it != text.end())
+                                           output = (*it).second;
                                        }
                                        return true;
                                      },
@@ -85,7 +86,13 @@ struct test_command_handler : public neo::command_handler
     return true;
   }
 
-  std::string output;
+  void add_text(neo::context const&, std::string&& name, std::string&& content)
+  {
+    text.emplace(std::move(name), std::move(content));
+  }
+
+  std::unordered_map<std::string, std::string> text;
+  std::string                                  output;
 };
 
 TEST_CASE("Scoped command", "[region0]")
@@ -103,7 +110,7 @@ TEST_CASE("Scoped command", "[region0]")
          neo::command const& cmd) -> bool
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
   test_command_handler handler;
-  neo::context         context(test_interpreter, handler, 0);
+  neo::context         context(test_interpreter, &handler, 0);
   context.parse("memory", iss);
   REQUIRE(!context.fail_bit());
   REQUIRE(handler.output == "echo --> (Hello world)\n");
@@ -130,8 +137,15 @@ TEST_CASE("Text region", "[region1]")
          neo::command const& cmd) -> bool {
         return static_cast<test_command_handler*>(_)->print_region(ctx, cmd);
       });
+  test_interpreter.set_text_region_handler(
+      [](neo::command_handler* _, neo::context const& ctx, std::string&& name,
+         std::string&& content)
+      {
+        return static_cast<test_command_handler*>(_)->add_text(
+            ctx, std::move(name), std::move(content));
+      });
   test_command_handler handler;
-  neo::context         context(test_interpreter, handler, 0);
+  neo::context         context(test_interpreter, &handler, 0);
   context.parse("memory", iss);
   REQUIRE(!context.fail_bit());
   REQUIRE(handler.output == "\nThe world began when we perished.\n"
@@ -170,7 +184,7 @@ TEST_CASE("Any command", "[region2]")
   root = test_interpreter.add_scoped_command(root, "Fourth", lambda);
   test_interpreter.add_command(root, "*", lambda);
   test_command_handler handler;
-  neo::context         context(test_interpreter, handler, 0);
+  neo::context         context(test_interpreter, &handler, 0);
   context.parse("memory", iss);
   REQUIRE(!context.fail_bit());
   REQUIRE(handler.output == "first --> (command, [is, executed])\n"
@@ -199,7 +213,7 @@ TEST_CASE("Block test", "[block]")
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
 
   test_command_handler handler;
-  neo::context         context(test_interpreter, handler, 0);
+  neo::context         context(test_interpreter, &handler, 0);
   context.parse("memory", iss);
   if (context.fail_bit())
   {

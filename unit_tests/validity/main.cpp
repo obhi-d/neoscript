@@ -105,7 +105,7 @@ TEST_CASE("Validate syntax files", "[file]")
     auto path = p.path();
     {
       fileout_command_handler handler(path.filename().generic_string());
-      neo::context            context(test_interpreter, handler, 0);
+      neo::context            context(test_interpreter, &handler, 0);
       context.set_import_handler(
           [](std::string const& name)
           { return std::make_shared<std::ifstream>("../dataset/" + name); });
