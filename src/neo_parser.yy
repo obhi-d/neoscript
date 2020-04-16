@@ -190,7 +190,7 @@ void parser_impl::error(location_type const& l,
   _.push_error(l, e.c_str());
 }
 
-void context::parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile) 
+void context::parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile) 
 {
 	auto restore_file = current_file_;
 	current_file_ = ifile;

@@ -3,29 +3,30 @@
 
 #ifdef NEO_DYN_LIB_
 #if defined _WIN32 || defined __CYGWIN__
-#ifdef NEO_EXPORT_
-// Exporting...
-#ifdef __GNUC__
-#define NEO_API __attribute__((dllexport))
+# ifdef NEO_EXPORT_
+#   ifdef __GNUC__
+#     define NEO_API __attribute__((dllexport))
+#   else
+#     define NEO_API __declspec(dllexport)
+#   endif
+# else
+#   ifdef __GNUC__
+#     define NEO_API __attribute__((dllimport))
+#   else
+#     define NEO_API __declspec(dllimport)
+#   endif
+# endif
 #else
-#define NEO_API __declspec(dllexport)
+# if __GNUC__ >= 4
+#   define NEO_API __attribute__((visibility("default")))
+# elif defined(__clang__)
+#   define NEO_API __attribute__((visibility("default")))
+# else
+#   define NEO_API
+# endif
 #endif
 #else
-#ifdef __GNUC__
-#define NEO_API __attribute__((dllimport))
-#else
-#define NEO_API __declspec(dllimport)
-#endif
-#endif
-#else
-#if __GNUC__ >= 4
-#define NEO_API __attribute__((visibility("default")))
-#else
-#define NEO_API
-#endif
-#endif
-#else
-#define NEO_API
+# define NEO_API
 #endif
 
 namespace neo

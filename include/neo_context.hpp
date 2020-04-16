@@ -46,7 +46,7 @@ public:
   void end_block();
   void start_region(std::string&& region_id, std::string&& content);
   void import_script(std::string const& file_id);
-  void parse(std::string_view src_name, std::shared_ptr<std::istream>& ifile);
+  void parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile);
   void error(location_type const&, std::string const&);
 
   // Import handler registration

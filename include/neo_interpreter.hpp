@@ -155,12 +155,12 @@ public:
     blocks_[dst_block].events_[dst_path] = blocks_[par_block].events_[src_path];
   }
 
-  void set_text_region_handler(text_reg_fn handler)
+  inline void set_text_region_handler(text_reg_fn handler)
   {
     text_reg_handler_ = handler;
   }
 
-  void handle_text_region(neo::command_handler* obj, neo::context const& ctx,
+  inline void handle_text_region(neo::command_handler* obj, neo::context const& ctx,
                           std::string&& region_id, std::string&& content)
   {
     if (text_reg_handler_)
