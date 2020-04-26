@@ -10,10 +10,10 @@ template Templ1<Param1, Param2> First {
     }
 
     Func3 Call Param1;
-    invoke Templ1<Hey, Jude>;
+    using Templ1<Hey, Jude>;
   };
 
-  invoke Templ1<Dont, Make>;
+  using Templ1<Dont, Make>;
 };
 
-invoke Templ1<It, Bad>;
+using Templ1<It, Bad>;

@@ -198,6 +198,15 @@ public:
     scoped_ = _.scoped_;
     return *this;
   }
+
+  inline command& operator=(command&& _)
+  {
+    name_   = std::move(_.name_);
+    params_ = std::move(_.params_);
+    scoped_ = std::move(_.scoped_);
+    return *this;
+  }
+
   inline std::string_view  name() const { return name_; }
   inline parameters const& params() const { return params_; }
   inline parameters&       params() { return params_; }

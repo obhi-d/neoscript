@@ -4,12 +4,12 @@ Command {
 	print Msg;
 }
 
-invoke Echo<"Hello">;
+using Echo<"Hello">;
 
 template <Msg>
 Clean {
 	print Msg;
 }
 
-invoke Clean<"World">;
+using Clean<"World">;
 

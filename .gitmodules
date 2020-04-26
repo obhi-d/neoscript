@@ -1,3 +1,9 @@
 [submodule "external/Catch2"]
 	path = external/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "external/neoscript-vsix"]
+	path = external/neoscript-vsix
+	url = https://github.com/obhi-d/neoscript-vsix.git
+[submodule "external/neoscript-tmlang"]
+	path = external/neoscript-tmlang
+	url = https://github.com/obhi-d/neoscript-tmlang.git
