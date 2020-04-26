@@ -81,10 +81,10 @@ BLANK   [ \t]
 "{"                                return neo::parser_impl::make_LBRACKET(_.loc());
 "}"                                return neo::parser_impl::make_RBRACKET(_.loc());
 "template"	                       return neo::parser_impl::make_TEMPLATE(_.loc());
-"invoke"	                         return neo::parser_impl::make_INVOKE(_.loc());
-"import"	                         return neo::parser_impl::make_IMPORT(_.loc());
-"<"			                           return neo::parser_impl::make_LABRACKET(_.loc());
-">"			                           return neo::parser_impl::make_RABRACKET(_.loc());
+"using"	                           return neo::parser_impl::make_USING(_.loc());
+"import"	                       return neo::parser_impl::make_IMPORT(_.loc());
+"<"			                       return neo::parser_impl::make_LABRACKET(_.loc());
+">"			                       return neo::parser_impl::make_RABRACKET(_.loc());
 "["                                return neo::parser_impl::make_LSQBRACKET(_.loc());
 "]"                                return neo::parser_impl::make_RSQBRACKET(_.loc());
 ","                                return neo::parser_impl::make_COMMA(_.loc());

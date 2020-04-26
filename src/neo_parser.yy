@@ -56,7 +56,7 @@ YY_DECL;
 	RBRACES    ")"
 	ASSIGN     "="
 	TEMPLATE   "template"
-	INVOKE     "invoke"
+	USING      "using"
 	IMPORT	   "import"
 	;
 
@@ -102,21 +102,21 @@ template_args.0.N:
 					;
 
 templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
-								$$ = _.make_command_template(
-											std::move($3), std::move($5));
+								$$ = std::move(_.make_command_template(
+											std::move($3), std::move($5)));
 						 }
 			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET commanddecl {
-				 				$$ = _.make_command_template(std::move($2),
-							        std::move($4), std::move($6));
+				 				$$ = std::move(_.make_command_template(std::move($2),
+							        std::move($4), std::move($6)));
 				     }
 				;
 
 commanddecl: SEMICOLON                          
-		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = _.make_command(std::move($1), std::move($2)); }
-		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = _.make_command(std::move($1), std::move($2), true); }
+		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = std::move(_.make_command(std::move($1), std::move($2))); }
+		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = std::move(_.make_command(std::move($1), std::move($2), true)); }
 		 
-instancedecl: INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = _.make_instance(std::move($2), std::move($4)); }
-		 | INVOKE IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = _.make_instance(std::move($2), std::move($4), true); }
+instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
+		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
 
 parameters.0.N:                       
 				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }

@@ -42,14 +42,14 @@ templ {
 	print Msg;
 }
 
-invoke Echo<"Hello">;
+using Echo<"Hello">;
 
 template <Msg>
 templ2 {
 	print Msg;
 }
 
-invoke templ2<"World">;
+using templ2<"World">;
 
 template <A, B, C>
 templ3 {
@@ -57,12 +57,12 @@ templ3 {
 	print B C;
 }
 
-invoke templ3<"Hello">;
+using templ3<"Hello">;
 
 template <A, B, C, D>
 templ4 {
 	print A B (a=C, b=D);
 }
 
-invoke templ4<"World">;
+using templ4<"World">;
 

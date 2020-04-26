@@ -54,7 +54,7 @@ else(NEOSCRIPT_BUILD_STATIC)
     ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp
   )
-  target_compile_definitions(${NEOSCRIPT_TARGET_NAME} INTERFACE NEO_DYN_LIB_)
+  target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
 endif(NEOSCRIPT_BUILD_STATIC)
 
 target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
