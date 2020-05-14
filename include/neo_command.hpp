@@ -94,6 +94,7 @@ public:
       value_.emplace_back(std::move(i_param));
     }
 
+    inline std::size_t size() const noexcept { return value_.size(); }
     inline std::size_t count() const noexcept { return value_.size(); }
     inline node const& at(std::uint32_t i) const noexcept { return value_[i]; }
     inline std::string const& name() const { return name_; }
@@ -107,6 +108,31 @@ public:
   };
 
   using param_t = list::node;
+
+  inline static std::string const& as_string(
+      param_t const& source, std::string const& default_val = "",
+      std::uint32_t pref_index = 0)
+  {
+    param_t const* p_source = &source;
+    while (true)
+    {
+      switch (source.index())
+      {
+      default:
+        return default_val;
+      case 1:
+        return std::get<1>(*p_source).value();
+      case 2:
+      {
+        list const& l = std::get<2>(*p_source);
+        if (l.count() > pref_index)
+          p_source = &l.at(pref_index);
+        else
+          return default_val;
+      }
+      }
+    }
+  }
 
   struct resolver
   {
