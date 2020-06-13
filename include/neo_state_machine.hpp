@@ -18,7 +18,7 @@ namespace neo
 class interpreter;
 struct command_handler;
 
-class NEO_API context
+class NEO_API state_machine
 {
 public:
   enum options
@@ -32,7 +32,7 @@ public:
   using import_handler =
       std::function<std::shared_ptr<std::istream>(std::string const&)>;
 
-  context(interpreter& interp, command_handler* handler,
+  state_machine(interpreter& interp, command_handler* handler,
           option_flags flags = 0);
   using location_type = neo::location;
 

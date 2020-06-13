@@ -6,7 +6,7 @@
 
 namespace neo
 {
-class context;
+class state_machine;
 class NEO_API command_template
 {
 public:
@@ -73,9 +73,9 @@ public:
     node                node_;
     std::vector<record> sub_;
 
-    void pre_visit(neo::context&) const;
-    void visit(neo::context&) const;
-    void post_visit(neo::context&) const;
+    void pre_visit(neo::state_machine&) const;
+    void visit(neo::state_machine&) const;
+    void post_visit(neo::state_machine&) const;
 
     record() = default;
     record(record const& rec) : node_(rec.node_), sub_(rec.sub_) {}
@@ -124,7 +124,7 @@ public:
     return std::get<template_record>(main_.node_).cmd_.is_scoped();
   }
 
-  void visit(neo::context&, bool extended) const;
+  void visit(neo::state_machine&, bool extended) const;
 
   std::vector<std::string> const& get_params() const
   {

@@ -7,7 +7,7 @@
 
 namespace neo
 {
-class context;
+class state_machine;
 class command_template;
 class NEO_API command_instance
 {
@@ -27,8 +27,8 @@ public:
   {}
 
   bool is_extended() const { return is_extended_; }
-  void build(neo::context&, neo::command_template const&);
-  void visit(neo::context&, bool extend);
+  void build(neo::state_machine&, neo::command_template const&);
+  void visit(neo::state_machine&, bool extend);
   std::optional<command::param_t> resolve(std::string_view name,
                                           std::string_view value);
 

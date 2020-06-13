@@ -13,21 +13,21 @@
 
 %code requires
 {
-#include <neo_context.hpp>
+#include <neo_state_machine.hpp>
 
 namespace neo {
   class location;
-  class context;
+  class state_machine;
 }
 #ifndef YY_NULLPTR
 #  define YY_NULLPTR nullptr
 #endif
-#define YY_DECL extern neo::parser_impl::symbol_type neo_lex(neo::context& _, void* yyscanner)
+#define YY_DECL extern neo::parser_impl::symbol_type neo_lex(neo::state_machine& _, void* yyscanner)
 
 }
 
 %define api.location.type {neo::location}
-%param { context& _ }
+%param { state_machine& _ }
 %lex-param { void* SCANNER_PARAM  }
 %locations
 %initial-action
@@ -37,7 +37,7 @@ namespace neo {
 
 %code
 {
-#include "neo_context.hpp"
+#include "neo_state_machine.hpp"
 #define SCANNER_PARAM _.scanner
 YY_DECL;
 }
@@ -190,7 +190,7 @@ void parser_impl::error(location_type const& l,
   _.push_error(l, e.c_str());
 }
 
-void context::parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile) 
+void state_machine::parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile) 
 {
 	auto restore_file = current_file_;
 	current_file_ = ifile;

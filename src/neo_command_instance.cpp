@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <neo_command_instance.hpp>
 #include <neo_command_template.hpp>
-#include <neo_context.hpp>
+#include <neo_state_machine.hpp>
 
 namespace neo
 {
 
-void command_instance::build(neo::context&                ctx,
+void command_instance::build(neo::state_machine&                ctx,
                              neo::command_template const& tmpl)
 {
   auto const& params  = tmpl.get_params();
@@ -37,7 +37,7 @@ void command_instance::build(neo::context&                ctx,
       param_list_);
 }
 
-void command_instance::visit(neo::context& ctx, bool extend)
+void command_instance::visit(neo::state_machine& ctx, bool extend)
 {
   auto const& templ = ctx.find_template(template_);
   if (ctx.fail_bit())

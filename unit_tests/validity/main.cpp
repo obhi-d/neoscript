@@ -16,23 +16,23 @@ struct fileout_command_handler : public neo::command_handler
     assert(file.is_open());
   }
 
-  static bool print(neo::command_handler* _, neo::context const& ctx,
+  static bool print(neo::command_handler* _, neo::state_machine const& ctx,
                     neo::command const& cmd)
   {
     return static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
   }
-  static bool enter_scope(neo::command_handler* _, neo::context const& ctx,
+  static bool enter_scope(neo::command_handler* _, neo::state_machine const& ctx,
                           std::string_view name)
   {
     return static_cast<fileout_command_handler*>(_)->enter_scope_m(ctx, name);
   }
-  static bool leave_scope(neo::command_handler* _, neo::context const& ctx,
+  static bool leave_scope(neo::command_handler* _, neo::state_machine const& ctx,
                           std::string_view name)
   {
     return static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
   }
 
-  bool print_m(neo::context const& ctx, neo::command const& cmd)
+  bool print_m(neo::state_machine const& ctx, neo::command const& cmd)
   {
     file << scope << cmd.name() << " --> (";
     auto const& params = cmd.params().value();
@@ -49,14 +49,14 @@ struct fileout_command_handler : public neo::command_handler
     return true;
   }
 
-  bool enter_scope_m(neo::context const&, std::string_view name)
+  bool enter_scope_m(neo::state_machine const&, std::string_view name)
   {
     scope += last_cmd;
     scope += '/';
     return true;
   }
 
-  bool leave_scope_m(neo::context const&, std::string_view name)
+  bool leave_scope_m(neo::state_machine const&, std::string_view name)
   {
     scope.pop_back();
     std::size_t pos = scope.find_last_of('/');
@@ -106,22 +106,22 @@ TEST_CASE("Validate syntax files", "[file]")
     auto path = p.path();
     {
       fileout_command_handler handler(path.filename().generic_string());
-      neo::context            context(test_interpreter, &handler, 0);
-      context.set_import_handler(
+      neo::state_machine            state_machine(test_interpreter, &handler, 0);
+      state_machine.set_import_handler(
           [](std::string const& name)
           { return std::make_shared<std::ifstream>("../dataset/" + name); });
       std::shared_ptr<std::istream> iss = std::make_shared<std::ifstream>(path);
-      context.parse(path.filename().generic_string(), iss);
-      if (context.fail_bit())
+      state_machine.parse(path.filename().generic_string(), iss);
+      if (state_machine.fail_bit())
       {
         std::cerr << "[ERROR] Compiling file "
                   << path.filename().generic_string() << std::endl;
-        context.for_each_error(
+        state_machine.for_each_error(
             [](std::string const& err)
             { std::cerr << "        " << err << std::endl; });
       }
       std::cout << "[INFO] " << path.filename().generic_string() << std::endl;
-      CHECK(!context.fail_bit());
+      CHECK(!state_machine.fail_bit());
     }
     CHECK(compare_expected(path.filename().generic_string()));
   }

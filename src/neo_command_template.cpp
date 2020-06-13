@@ -1,10 +1,10 @@
 #include <neo_command_template.hpp>
 #include <neo_common.hpp>
-#include <neo_context.hpp>
+#include <neo_state_machine.hpp>
 
 namespace neo
 {
-void command_template::record::pre_visit(neo::context& ctx) const
+void command_template::record::pre_visit(neo::state_machine& ctx) const
 {
   if (ctx.fail_bit())
     return;
@@ -23,7 +23,7 @@ void command_template::record::pre_visit(neo::context& ctx) const
                         }},
              node_);
 }
-void command_template::record::visit(neo::context& ctx) const
+void command_template::record::visit(neo::state_machine& ctx) const
 {
   if (sub_.size() > 0)
   {
@@ -41,7 +41,7 @@ void command_template::record::visit(neo::context& ctx) const
     }
   }
 }
-void command_template::record::post_visit(neo::context& ctx) const
+void command_template::record::post_visit(neo::state_machine& ctx) const
 {
   std::visit(overloaded{[&ctx](auto const& oth) {},
                         [&ctx](command_template_ref const& rec)
@@ -50,7 +50,7 @@ void command_template::record::post_visit(neo::context& ctx) const
                         [&ctx](instance_record const& rec) {}},
              node_);
 }
-void command_template::visit(neo::context& ctx, bool extend) const
+void command_template::visit(neo::state_machine& ctx, bool extend) const
 {
   assert(main_.node_.index() == 2);
   template_record const& rec = std::get<template_record>(main_.node_);

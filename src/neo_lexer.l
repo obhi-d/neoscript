@@ -6,10 +6,10 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
-#include <neo_context.hpp>
+#include <neo_state_machine.hpp>
 #include <parse.neo.hpp>
 #define YY_NO_UNISTD_H
-#define YY_EXTRA_TYPE neo::context*
+#define YY_EXTRA_TYPE neo::state_machine*
 #define YY_INPUT(buf,result,max_size)       \
 	result = yyextra->read(buf, max_size);	\
 	assert(result <= max_size);			    \
@@ -159,13 +159,13 @@ BLANK   [ \t]
 namespace neo 
 {
 
-void context::begin_scan() 
+void state_machine::begin_scan() 
 {
   neo_lex_init_extra(this, &scanner);
   neo_set_debug(flags_ & f_trace_scan, scanner);
 }
 
-void context::end_scan() 
+void state_machine::end_scan() 
 {
   neo_lex_destroy(scanner);
 }

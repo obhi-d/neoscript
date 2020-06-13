@@ -40,7 +40,7 @@ message("Target name: ${NEOSCRIPT_TARGET_NAME}")
 
 if (NEOSCRIPT_BUILD_STATIC)
   add_library(${NEOSCRIPT_TARGET_NAME} STATIC
-    src/neo_context.cpp
+    src/neo_state_machine.cpp
     src/neo_command_instance.cpp
     src/neo_command_template.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
@@ -48,7 +48,7 @@ if (NEOSCRIPT_BUILD_STATIC)
   )
 else(NEOSCRIPT_BUILD_STATIC)
   add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
-    src/neo_context.cpp
+    src/neo_state_machine.cpp
     src/neo_command_instance.cpp
     src/neo_command_template.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp

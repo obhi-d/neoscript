@@ -1,6 +1,6 @@
 #pragma once
 #include <neo_command.hpp>
-#include <neo_context.hpp>
+#include <neo_state_machine.hpp>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
@@ -10,11 +10,11 @@ namespace neo
 struct command_handler
 {
 };
-using command_handler_fn = bool (*)(command_handler* obj, neo::context const&,
+using command_handler_fn = bool (*)(command_handler* obj, neo::state_machine const&,
                                     neo::command const&);
-using block_scope_fn     = bool (*)(command_handler* obj, neo::context const&,
+using block_scope_fn     = bool (*)(command_handler* obj, neo::state_machine const&,
                                 std::string_view cmd_name);
-using text_reg_fn        = void (*)(command_handler* obj, neo::context const&,
+using text_reg_fn        = void (*)(command_handler* obj, neo::state_machine const&,
                              std::string&& name, std::string&& content);
 
 using command_id = std::uint32_t;
@@ -52,7 +52,7 @@ public:
     blocks_.emplace_back();
   }
 
-  inline bool begin_scope(neo::context& ctx, command_handler* obj,
+  inline bool begin_scope(neo::state_machine& ctx, command_handler* obj,
                           std::uint32_t block)
   {
     return blocks_[block].begin_ ? std::invoke(blocks_[block].begin_, obj, ctx,
@@ -60,7 +60,7 @@ public:
                                  : true;
   }
 
-  inline bool end_scope(neo::context& ctx, command_handler* obj,
+  inline bool end_scope(neo::state_machine& ctx, command_handler* obj,
                         std::uint32_t block)
   {
     return blocks_[block].end_ ? std::invoke(blocks_[block].end_, obj, ctx,
@@ -68,7 +68,7 @@ public:
                                : true;
   }
 
-  inline std::tuple<std::uint32_t, bool> execute(neo::context&    ctx,
+  inline std::tuple<std::uint32_t, bool> execute(neo::state_machine&    ctx,
                                                  command_handler* obj,
                                                  std::uint32_t    block,
                                                  neo::command&    cmd)
@@ -160,7 +160,7 @@ public:
     text_reg_handler_ = handler;
   }
 
-  inline void handle_text_region(neo::command_handler* obj, neo::context const& ctx,
+  inline void handle_text_region(neo::command_handler* obj, neo::state_machine const& ctx,
                           std::string&& region_id, std::string&& content)
   {
     if (text_reg_handler_)
