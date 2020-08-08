@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 3.1)
 project(neoscript VERSION 0.0.1 LANGUAGES CXX)
 
 
-option(NEOSCRIPT_BUILD_TESTS "Build the unit tests when BUILD_TESTING is enabled." ON)
-option(NEOSCRIPT_BUILD_STATIC "Build as static lib." ON)
-option(NEOSCRIPT_USE_LIBCPP_CLANG "Use libc++ for clang" ON)
+option(NEOSCRIPT_BUILD_TESTS      "Build the unit tests when BUILD_TESTING is enabled." ON)
+option(NEOSCRIPT_BUILD_STATIC     "Build as static lib."                                ON)
+option(NEOSCRIPT_USE_LIBCPP_CLANG "Use libc++ for clang"                                ON)
+set   (NEOSCRIPT_BISON            "bison"                                               CACHE STRING "Bison execuatable")
+set   (NESCRIPT_FLEX              "flex"                                                CACHE STRING "Flex executable"  )
 
 ##
 ## CONFIGURATION
@@ -16,14 +18,14 @@ set(NEOSCRIPT_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp" 
-	 COMMAND bison -o ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp --no-lines ${PROJECT_SOURCE_DIR}/src/neo_parser.yy
+	 COMMAND ${NEOSCRIPT_BISON} -o ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp --no-lines ${PROJECT_SOURCE_DIR}/src/neo_parser.yy
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
  )
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp" 
-	 COMMAND flex -o ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
+	 COMMAND ${NESCRIPT_FLEX} -o ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
 		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp"
