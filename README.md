@@ -1,1 +1,73 @@
 # neoscript
+
+Example syntax:
+
+```
+
+import "imported.neoscript";
+
+block parameter0 parameter1 {
+ command parameter2 parameter4;
+};
+
+comm1 [param1, param2, param3];
+comm2 "param0" [param1, param2, param3];
+comm3 [[param1, param2], param1, [param3]] (context = specific_parametrs, are_also = "supported and can be quieried");
+comm4 "sub-param" [[param1, param2], param1, [param3]] "big string value";
+
+{{code:another-script}}
+comm5 {
+ comm6 [[param1, param2]];
+ comm7 {
+   comm8 {
+	multi_line_string "some multi line
+	string is added ";
+   }
+ }
+}
+comm9 [[param1="list", param2="special"], param1="parameters", [param3="are also possible"]];
+
+{{text:atextreg}}
+So this is what was expected.
+Everything working. No big deal.
+Lets check if this actually works.
+
+Last line of operation.
+{{code:onemore}}
+
+block parameter0 parameter1 {
+ command parameter2 parameter4;
+};
+
+// Test templates 
+
+template Echo<Msg>
+templ {
+	print Msg;
+}
+
+using Echo<"Hello">;
+
+template <Msg>
+templ2 {
+	print Msg;
+}
+
+using templ2<"World">;
+
+template <A, B, C>
+templ3 {
+	print A;
+	print B C;
+}
+
+using templ3<"Hello">;
+
+template <A, B, C, D>
+templ4 {
+	print A B (a=C, b=D);
+}
+
+using templ4<"World">;
+
+```
