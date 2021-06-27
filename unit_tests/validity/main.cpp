@@ -21,13 +21,13 @@ struct fileout_command_handler : public neo::command_handler
   {
     return static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
   }
-  static bool enter_scope(neo::command_handler* _, neo::state_machine const& ctx,
-                          std::string_view name)
+  static bool enter_scope(neo::command_handler*     _,
+                          neo::state_machine const& ctx, std::string_view name)
   {
     return static_cast<fileout_command_handler*>(_)->enter_scope_m(ctx, name);
   }
-  static bool leave_scope(neo::command_handler* _, neo::state_machine const& ctx,
-                          std::string_view name)
+  static bool leave_scope(neo::command_handler*     _,
+                          neo::state_machine const& ctx, std::string_view name)
   {
     return static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
   }
@@ -73,21 +73,21 @@ struct fileout_command_handler : public neo::command_handler
   std::string   last_cmd;
 };
 
-bool compare_expected(std::string const& name)
+std::tuple<std::string, std::string> compare_expected(std::string const& name)
 {
   std::ifstream f1("../output/" + name);
   std::ifstream f2("../expected/" + name);
 
   if (f1.fail() || f2.fail())
   {
-    return false; // file problem
+    return {"file issue", "error in open"}; // file problem
   }
   std::string f1_str((std::istreambuf_iterator<char>(f1)),
                      std::istreambuf_iterator<char>());
   std::string f2_str((std::istreambuf_iterator<char>(f2)),
                      std::istreambuf_iterator<char>());
 
-  return f1_str == f2_str;
+  return {f1_str, f2_str};
 }
 
 TEST_CASE("Validate syntax files", "[file]")
@@ -106,7 +106,7 @@ TEST_CASE("Validate syntax files", "[file]")
     auto path = p.path();
     {
       fileout_command_handler handler(path.filename().generic_string());
-      neo::state_machine            state_machine(test_interpreter, &handler, 0);
+      neo::state_machine      state_machine(test_interpreter, &handler, 0);
       state_machine.set_import_handler(
           [](std::string const& name)
           { return std::make_shared<std::ifstream>("../dataset/" + name); });
@@ -123,6 +123,7 @@ TEST_CASE("Validate syntax files", "[file]")
       std::cout << "[INFO] " << path.filename().generic_string() << std::endl;
       CHECK(!state_machine.fail_bit());
     }
-    CHECK(compare_expected(path.filename().generic_string()));
+    auto [first, second] = compare_expected(path.filename().generic_string());
+    CHECK(first == second);
   }
 }

@@ -107,7 +107,7 @@ BLANK   [ \t]
 					BEGIN(STATE_REGION_CODE); 
 				else 
 					BEGIN(STATE_REGION_TEXT);
-				_.put(':');
+				_.start();
 			}
 }
 

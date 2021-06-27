@@ -1,13 +1,13 @@
 #include <fstream>
-#include <neo_state_machine.hpp>
 #include <neo_interpreter.hpp>
+#include <neo_state_machine.hpp>
 
 namespace neo
 {
 
 const command_template state_machine::null_template_;
 state_machine::state_machine(interpreter& interp, command_handler* handler,
-                 state_machine::option_flags flags)
+                             state_machine::option_flags flags)
     : flags_(flags), importer_(&state_machine::default_import_handler),
       interpreter_(interp), cmd_handler_(handler)
 {}
@@ -19,8 +19,10 @@ void state_machine::start_region(std::string&& region)
     push_error(loc(), "syntax error, missing '}'");
     return;
   }
+
   block_stack_.clear();
-  block_stack_.push_back(interpreter_.get_region_root(region));
+  auto block = interpreter_.get_region_root(region);
+  block_stack_.push_back(block);
   this->region_ = std::move(region);
 }
 void state_machine::consume(neo::command&& cmd)
@@ -37,17 +39,17 @@ void state_machine::consume(neo::command&& cmd)
   {
     if (resolver_stack_)
       resolve(cmd);
-    auto sub = interpreter_.execute(*this, cmd_handler_,
-                                    this->block_stack_.back(), cmd);
-    if (std::get<0>(sub) == interpreter::k_failure)
+    auto [block, scoped] = interpreter_.execute(*this, cmd_handler_,
+                                                this->block_stack_.back(), cmd);
+    if (block == interpreter::k_failure)
     {
       push_error(loc(), "command execution failure");
       return;
     }
-    if (cmd.is_scoped() && std::get<1>(sub))
+    if (cmd.is_scoped() && scoped)
     {
-      block_stack_.push_back(std::get<0>(sub));
-      interpreter_.begin_scope(*this, cmd_handler_, std::get<0>(sub));
+      block_stack_.push_back(block);
+      interpreter_.begin_scope(*this, cmd_handler_, block, cmd.name());
     }
   }
 }
@@ -124,7 +126,7 @@ void state_machine::end_block()
       push_error(loc(), "syntax error, unexpected '}'");
     else
     {
-      interpreter_.end_scope(*this, cmd_handler_, block_stack_.back());
+      interpreter_.end_scope(*this, cmd_handler_, block_stack_.back(), "");
       block_stack_.pop_back();
     }
   }
@@ -155,14 +157,13 @@ neo::command_template state_machine::make_command_template(
                                std::move(cmd));
 }
 neo::command state_machine::make_command(std::string&&              name,
-                                   neo::command::parameters&& params,
-                                   bool                       scope_trigger)
+                                         neo::command::parameters&& params,
+                                         bool scope_trigger)
 {
   return neo::command(std::move(name), std::move(params), scope_trigger);
 }
-neo::command_instance state_machine::make_instance(std::string&&           name,
-                                             neo::command::param_t&& param,
-                                             bool scope_trigger)
+neo::command_instance state_machine::make_instance(
+    std::string&& name, neo::command::param_t&& param, bool scope_trigger)
 {
   return neo::command_instance(std::move(name), std::move(param),
                                scope_trigger);

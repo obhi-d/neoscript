@@ -86,7 +86,8 @@ struct test_command_handler : public neo::command_handler
     return true;
   }
 
-  void add_text(neo::state_machine const&, std::string&& name, std::string&& content)
+  void add_text(neo::state_machine const&, std::string&& name,
+                std::string&& content)
   {
     text.emplace(std::move(name), std::move(content));
   }
@@ -103,14 +104,14 @@ TEST_CASE("Scoped command", "[region0]")
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  auto root = test_interpreter.ensure_region_root("code:Scoped");
+  auto root = test_interpreter.ensure_region_root("Scoped");
   test_interpreter.add_command(
       root, "echo",
       [](neo::command_handler* _, neo::state_machine const& ctx,
          neo::command const& cmd) -> bool
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
   test_command_handler handler;
-  neo::state_machine         state_machine(test_interpreter, &handler, 0);
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", iss);
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "echo --> (Hello world)\n");
@@ -126,11 +127,11 @@ TEST_CASE("Text region", "[region1]")
                      "Of time{\n"
                      "\\{\\{unknown}}\n"
                      "{{code:Print}}\n"
-                     "print (region = \"text:History\"); \n";
+                     "print (region = \"History\"); \n";
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  auto root = test_interpreter.ensure_region_root("code:Print");
+  auto root = test_interpreter.ensure_region_root("Print");
   test_interpreter.add_command(
       root, "print",
       [](neo::command_handler* _, neo::state_machine const& ctx,
@@ -138,14 +139,14 @@ TEST_CASE("Text region", "[region1]")
         return static_cast<test_command_handler*>(_)->print_region(ctx, cmd);
       });
   test_interpreter.set_text_region_handler(
-      [](neo::command_handler* _, neo::state_machine const& ctx, std::string&& name,
-         std::string&& content)
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         std::string&& name, std::string&& content)
       {
         return static_cast<test_command_handler*>(_)->add_text(
             ctx, std::move(name), std::move(content));
       });
   test_command_handler handler;
-  neo::state_machine         state_machine(test_interpreter, &handler, 0);
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", iss);
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "\nThe world began when we perished.\n"
@@ -171,20 +172,20 @@ TEST_CASE("Any command", "[region2]")
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  neo::command_handler_fn lambda = [](neo::command_handler* _,
-                                      neo::state_machine const&   ctx,
-                                      neo::command const&   cmd) -> bool
+  neo::command_hook lambda = [](neo::command_handler*     _,
+                                neo::state_machine const& ctx,
+                                neo::command const&       cmd) -> bool
   { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); };
   auto root = test_interpreter.ensure_region_root("");
   test_interpreter.add_command(root, "*", lambda);
-  root = test_interpreter.ensure_region_root("code:Print");
+  root = test_interpreter.ensure_region_root("Print");
   test_interpreter.add_command(root, "*", lambda);
-  root = test_interpreter.ensure_region_root("code:Main");
+  root = test_interpreter.ensure_region_root("Main");
   test_interpreter.add_command(root, "*", lambda);
   root = test_interpreter.add_scoped_command(root, "Fourth", lambda);
   test_interpreter.add_command(root, "*", lambda);
   test_command_handler handler;
-  neo::state_machine         state_machine(test_interpreter, &handler, 0);
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", iss);
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "first --> (command, [is, executed])\n"
@@ -213,13 +214,14 @@ TEST_CASE("Block test", "[block]")
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
 
   test_command_handler handler;
-  neo::state_machine         state_machine(test_interpreter, &handler, 0);
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", iss);
   if (state_machine.fail_bit())
   {
     std::cerr << "[ERROR] While compiling [block]" << std::endl;
-    state_machine.for_each_error([](std::string const& err)
-                           { std::cerr << "        " << err << std::endl; });
+    state_machine.for_each_error(
+        [](std::string const& err)
+        { std::cerr << "        " << err << std::endl; });
   }
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "block --> (parameter0, parameter1)\n"

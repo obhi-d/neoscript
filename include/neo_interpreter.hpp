@@ -10,12 +10,14 @@ namespace neo
 struct command_handler
 {
 };
-using command_handler_fn = bool (*)(command_handler* obj, neo::state_machine const&,
-                                    neo::command const&);
-using block_scope_fn     = bool (*)(command_handler* obj, neo::state_machine const&,
-                                std::string_view cmd_name);
-using text_reg_fn        = void (*)(command_handler* obj, neo::state_machine const&,
-                             std::string&& name, std::string&& content);
+using command_hook = bool (*)(command_handler* obj, neo::state_machine const&,
+                              neo::command const&);
+using block_hook =
+    bool (*)(command_handler* obj, neo::state_machine const&,
+             std::string_view hook_name); // scope_name is "" at end of scope
+
+using textreg_hook = void (*)(command_handler* obj, neo::state_machine const&,
+                              std::string&& name, std::string&& content);
 
 using command_id = std::uint32_t;
 
@@ -24,20 +26,19 @@ class interpreter
   struct block;
   struct handler
   {
-    command_handler_fn cbk_          = nullptr;
-    std::uint32_t      sub_handlers_ = 0xffffffff;
-    handler()                        = default;
-    handler(command_handler_fn cbk, std::uint32_t sub)
+    command_hook  cbk_          = nullptr;
+    std::uint32_t sub_handlers_ = 0xffffffff;
+    handler()                   = default;
+    handler(command_hook cbk, std::uint32_t sub)
         : cbk_(std::move(cbk)), sub_handlers_(sub)
     {}
   };
   struct block
   {
     std::unordered_map<std::string_view, handler> events_;
-    std::string_view                              name_;
-    command_handler_fn                            any_;
-    block_scope_fn                                begin_ = nullptr;
-    block_scope_fn                                end_   = nullptr;
+    command_hook                                  any_;
+    block_hook                                    begin_ = nullptr;
+    block_hook                                    end_   = nullptr;
   };
 
 public:
@@ -53,25 +54,25 @@ public:
   }
 
   inline bool begin_scope(neo::state_machine& ctx, command_handler* obj,
-                          std::uint32_t block)
+                          std::uint32_t block, std::string_view scope_id)
   {
-    return blocks_[block].begin_ ? std::invoke(blocks_[block].begin_, obj, ctx,
-                                               blocks_[block].name_)
-                                 : true;
+    return blocks_[block].begin_
+               ? std::invoke(blocks_[block].begin_, obj, ctx, scope_id)
+               : true;
   }
 
   inline bool end_scope(neo::state_machine& ctx, command_handler* obj,
-                        std::uint32_t block)
+                        std::uint32_t block, std::string_view scope_id)
   {
-    return blocks_[block].end_ ? std::invoke(blocks_[block].end_, obj, ctx,
-                                             blocks_[block].name_)
-                               : true;
+    return blocks_[block].end_
+               ? std::invoke(blocks_[block].end_, obj, ctx, scope_id)
+               : true;
   }
 
-  inline std::tuple<std::uint32_t, bool> execute(neo::state_machine&    ctx,
-                                                 command_handler* obj,
-                                                 std::uint32_t    block,
-                                                 neo::command&    cmd)
+  inline std::tuple<std::uint32_t, bool> execute(neo::state_machine& ctx,
+                                                 command_handler*    obj,
+                                                 std::uint32_t       block,
+                                                 neo::command&       cmd)
   {
     auto& block_ref = blocks_[block];
     auto  it        = block_ref.events_.find(cmd.name());
@@ -107,31 +108,31 @@ public:
     if (it != reg_block_mappings_.end())
       return (*it).second;
     auto id = static_cast<std::uint32_t>(blocks_.size());
-    reg_block_mappings_.emplace(std::move(name), id);
+    reg_block_mappings_.emplace(name, id);
     blocks_.resize(id + 1);
     return id;
   } /// region type to block mapping
 
   /// A non scoped command registration
   inline command_id add_command(command_id parent_scope, std::string_view cmd,
-                                command_handler_fn callback = nullptr)
+                                command_hook callback = nullptr)
   {
     return internal_add_command(parent_scope, cmd,
-                                static_cast<command_handler_fn>(callback),
-                                false, nullptr, nullptr);
+                                static_cast<command_hook>(callback), false,
+                                nullptr, nullptr);
   }
 
   /// A scoped command registration
-  inline command_id add_scoped_command(command_id         parent_scope,
-                                       std::string_view   cmd,
-                                       command_handler_fn callback    = nullptr,
-                                       block_scope_fn     block_begin = nullptr,
-                                       block_scope_fn     block_end   = nullptr)
+  inline command_id add_scoped_command(command_id       parent_scope,
+                                       std::string_view cmd,
+                                       command_hook     callback    = nullptr,
+                                       block_hook       block_begin = nullptr,
+                                       block_hook       block_end   = nullptr)
   {
     return internal_add_command(parent_scope, cmd,
-                                static_cast<command_handler_fn>(callback), true,
-                                static_cast<block_scope_fn>(block_begin),
-                                static_cast<block_scope_fn>(block_end));
+                                static_cast<command_hook>(callback), true,
+                                static_cast<block_hook>(block_begin),
+                                static_cast<block_hook>(block_end));
   }
 
   /// Alias the behaviour of an already registered command with a new
@@ -155,13 +156,14 @@ public:
     blocks_[dst_block].events_[dst_path] = blocks_[par_block].events_[src_path];
   }
 
-  inline void set_text_region_handler(text_reg_fn handler)
+  inline void set_text_region_handler(textreg_hook handler)
   {
     text_reg_handler_ = handler;
   }
 
-  inline void handle_text_region(neo::command_handler* obj, neo::state_machine const& ctx,
-                          std::string&& region_id, std::string&& content)
+  inline void handle_text_region(neo::command_handler*     obj,
+                                 neo::state_machine const& ctx,
+                                 std::string&& region_id, std::string&& content)
   {
     if (text_reg_handler_)
       text_reg_handler_(obj, ctx, std::move(region_id), std::move(content));
@@ -170,12 +172,12 @@ public:
 private:
   /// All sub-commands must be registred right after
   /// a parent command is registered
-  inline command_id internal_add_command(command_id         parent_scope,
-                                         std::string_view   cmd,
-                                         command_handler_fn callback  = nullptr,
-                                         bool               is_scoped = false,
-                                         block_scope_fn     begin     = nullptr,
-                                         block_scope_fn     end       = nullptr)
+  inline command_id internal_add_command(command_id       parent_scope,
+                                         std::string_view cmd,
+                                         command_hook     callback  = nullptr,
+                                         bool             is_scoped = false,
+                                         block_hook       begin     = nullptr,
+                                         block_hook       end       = nullptr)
   {
     assert(parent_scope < blocks_.size());
     std::uint32_t id = 0xffffffff;
@@ -190,7 +192,6 @@ private:
         id = static_cast<std::uint32_t>(blocks_.size());
         blocks_.resize(blocks_.size() + 1);
       }
-      blocks_[id].name_  = cmd;
       blocks_[id].begin_ = begin;
       blocks_[id].end_   = end;
     }
@@ -203,7 +204,7 @@ private:
   }
 
   inline void internal_add_scope(command_id parent_scope, command_id new_scope,
-                                 block_scope_fn begin, block_scope_fn end)
+                                 block_hook begin, block_hook end)
   {
     if (parent_scope >= blocks_.size())
       blocks_.resize(parent_scope + 1);
@@ -272,7 +273,7 @@ private:
   }
 
 private:
-  text_reg_fn text_reg_handler_ = nullptr;
+  textreg_hook text_reg_handler_ = nullptr;
   std::unordered_map<std::string_view, std::uint32_t> reg_block_mappings_;
   /// block 0 is always the root
   std::vector<block> blocks_;

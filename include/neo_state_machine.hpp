@@ -33,7 +33,7 @@ public:
       std::function<std::shared_ptr<std::istream>(std::string const&)>;
 
   state_machine(interpreter& interp, command_handler* handler,
-          option_flags flags = 0);
+                option_flags flags = 0);
   using location_type = neo::location;
 
   void start_region(std::string&&);
@@ -46,7 +46,8 @@ public:
   void end_block();
   void start_region(std::string&& region_id, std::string&& content);
   void import_script(std::string const& file_id);
-  void parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile);
+  void parse(std::string_view                     src_name,
+             std::shared_ptr<std::istream> const& ifile);
   void error(location_type const&, std::string const&);
 
   // Import handler registration
