@@ -18,7 +18,7 @@ set(NEOSCRIPT_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp" 
-	 COMMAND ${NEOSCRIPT_BISON} -o ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp --no-lines ${PROJECT_SOURCE_DIR}/src/neo_parser.yy
+	 COMMAND ${NEOSCRIPT_BISON} -o ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp --no-lines -Wcounterexamples ${PROJECT_SOURCE_DIR}/src/neo_parser.yy
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
  )

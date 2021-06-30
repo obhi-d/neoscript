@@ -3,19 +3,21 @@
 #include <forward_list>
 #include <istream>
 #include <memory>
-#include <neo_command.hpp>
-#include <neo_command_instance.hpp>
-#include <neo_command_template.hpp>
-#include <neo_location.hpp>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+// neo
+#include <neo_command.hpp>
+#include <neo_command_instance.hpp>
+#include <neo_command_template.hpp>
+#include <neo_location.hpp>
+
 namespace neo
 {
 
-class interpreter;
+class registry;
 struct command_handler;
 
 class NEO_API state_machine
@@ -32,7 +34,7 @@ public:
   using import_handler =
       std::function<std::shared_ptr<std::istream>(std::string const&)>;
 
-  state_machine(interpreter& interp, command_handler* handler,
+  state_machine(registry const& registry, command_handler* handler,
                 option_flags flags = 0);
   using location_type = neo::location;
 
@@ -115,6 +117,11 @@ public:
     return errors_.size() > 0 && !(flags_ & f_continue_on_error);
   }
 
+  bool skip() const { return skip_ > 0; }
+
+  void         enter_skip_scope() { skip_++; }
+  std::int32_t exit_skip_scope() { return --skip_; }
+
 private:
   using record_ptr = neo::command_template::record*;
   static std::shared_ptr<std::istream> default_import_handler(
@@ -130,7 +137,7 @@ private:
   std::vector<record_ptr>       record_stack_;
   std::vector<std::string>      errors_;
   root_template_list            root_template_storage_;
-  interpreter&                  interpreter_;
+  registry const&               registry_;
   command_handler*              cmd_handler_;
   resolver*                     resolver_stack_ = nullptr;
   std::string                   region_;
@@ -140,6 +147,7 @@ private:
   std::string                   source_name_;
   location_type                 loc_;
   option_flags                  flags_ = 0;
+  std::int32_t                  skip_  = 0;
 
   static const command_template null_template_;
 };

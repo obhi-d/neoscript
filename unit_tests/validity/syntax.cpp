@@ -44,7 +44,8 @@ std::string to_string(neo::command::param_t const& param)
 
 struct test_command_handler : public neo::command_handler
 {
-  bool generate(neo::state_machine const&, neo::command const& cmd)
+  neo::command_handler::results generate(neo::state_machine const&,
+                                         neo::command const& cmd)
   {
     output += cmd.name();
     output += " --> (";
@@ -58,10 +59,11 @@ struct test_command_handler : public neo::command_handler
       output += to_string(val);
     }
     output += ")\n";
-    return true;
+    return neo::command_handler::results::e_success;
   }
 
-  bool print_region(neo::state_machine const& ctx, neo::command const& cmd)
+  neo::command_handler::results print_region(neo::state_machine const& ctx,
+                                             neo::command const&       cmd)
   {
     auto const& params = cmd.params().value();
     bool        first  = true;
@@ -83,7 +85,7 @@ struct test_command_handler : public neo::command_handler
         break;
     }
     this->output = output;
-    return true;
+    return neo::command_handler::results::e_success;
   }
 
   void add_text(neo::state_machine const&, std::string&& name,
@@ -98,8 +100,8 @@ struct test_command_handler : public neo::command_handler
 
 TEST_CASE("Scoped command", "[region0]")
 {
-  neo::interpreter test_interpreter;
-  std::string      test = "{{code:Scoped}} \n"
+  neo::registry test_interpreter;
+  std::string   test = "{{code:Scoped}} \n"
                      "echo \"Hello world\"; \n";
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
@@ -108,7 +110,7 @@ TEST_CASE("Scoped command", "[region0]")
   test_interpreter.add_command(
       root, "echo",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> bool
+         neo::command const& cmd) -> neo::command_handler::results
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
   test_command_handler handler;
   neo::state_machine   state_machine(test_interpreter, &handler, 0);
@@ -119,8 +121,8 @@ TEST_CASE("Scoped command", "[region0]")
 
 TEST_CASE("Text region", "[region1]")
 {
-  neo::interpreter test_interpreter;
-  std::string      test = "{{text:History}}\n"
+  neo::registry test_interpreter;
+  std::string   test = "{{text:History}}\n"
                      "The world began when we perished.\n"
                      "But we left our mark to be found again.\n"
                      "In the future, we lived again in memories.\n"
@@ -135,7 +137,7 @@ TEST_CASE("Text region", "[region1]")
   test_interpreter.add_command(
       root, "print",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> bool {
+         neo::command const& cmd) -> neo::command_handler::results {
         return static_cast<test_command_handler*>(_)->print_region(ctx, cmd);
       });
   test_interpreter.set_text_region_handler(
@@ -158,8 +160,8 @@ TEST_CASE("Text region", "[region1]")
 
 TEST_CASE("Any command", "[region2]")
 {
-  neo::interpreter test_interpreter;
-  std::string      test = "first command [is, executed];\n"
+  neo::registry test_interpreter;
+  std::string   test = "first command [is, executed];\n"
                      "second command [is, stalled];\n"
                      "{{code:Main}}\n"
                      "Third command [is, super = executed];\n"
@@ -172,9 +174,9 @@ TEST_CASE("Any command", "[region2]")
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  neo::command_hook lambda = [](neo::command_handler*     _,
-                                neo::state_machine const& ctx,
-                                neo::command const&       cmd) -> bool
+  neo::command_hook lambda =
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) -> neo::command_handler::results
   { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); };
   auto root = test_interpreter.ensure_region_root("");
   test_interpreter.add_command(root, "*", lambda);
@@ -199,8 +201,8 @@ TEST_CASE("Any command", "[region2]")
 
 TEST_CASE("Block test", "[block]")
 {
-  neo::interpreter test_interpreter;
-  std::string      test = "block parameter0 parameter1 {\n"
+  neo::registry test_interpreter;
+  std::string   test = "block parameter0 parameter1 {\n"
                      " command parameter2 parameter4;\n"
                      "};\n";
   std::shared_ptr<std::istream> iss =
@@ -210,7 +212,7 @@ TEST_CASE("Block test", "[block]")
   test_interpreter.add_scoped_command(
       root, "*",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> bool
+         neo::command const& cmd) -> neo::command_handler::results
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
 
   test_command_handler handler;
@@ -226,4 +228,73 @@ TEST_CASE("Block test", "[block]")
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "block --> (parameter0, parameter1)\n"
                             "command --> (parameter2, parameter4)\n");
+}
+
+TEST_CASE("Skip test", "[skip]")
+{
+  neo::registry reg;
+  std::string   test =
+      "simple skip { inner command; inner strength; inner peace; };\n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root  = reg.ensure_region_root("");
+  auto scope = reg.add_scoped_command(
+      root, "simple",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) -> neo::command_handler::results
+      { return neo::command_handler::results::e_skip_block; });
+
+  reg.add_command(scope, "inner",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) -> neo::command_handler::results
+                  { return neo::command_handler::results::e_fail_and_stop; });
+
+  neo::state_machine state_machine(reg, nullptr, 0);
+  state_machine.parse("memory", iss);
+  REQUIRE(!state_machine.fail_bit());
+}
+
+TEST_CASE("Skip test rest of commands", "[skip2]")
+{
+  neo::registry reg;
+  std::string   test = "simple skip { inner command; next command; porchain "
+                     "command; inner strength; inner peace; };\n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root  = reg.ensure_region_root("");
+  auto scope = reg.add_scoped_command(
+      root, "simple",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) -> neo::command_handler::results
+      { return neo::command_handler::results::e_success; });
+
+  struct handler : neo::command_handler
+  {
+    int inner_call = 0;
+  };
+  handler h;
+  reg.add_command(scope, "inner",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) -> neo::command_handler::results
+                  {
+                    static_cast<handler*>(_)->inner_call++;
+                    return neo::command_handler::results::e_skip_rest;
+                  });
+
+  reg.add_command(scope, "next",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) -> neo::command_handler::results
+                  { return neo::command_handler::results::e_fail_and_stop; });
+
+  reg.add_command(scope, "porchain",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) -> neo::command_handler::results
+                  { return neo::command_handler::results::e_fail_and_stop; });
+
+  neo::state_machine state_machine(reg, &h, 0);
+  state_machine.parse("memory", iss);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(h.inner_call == 1);
 }

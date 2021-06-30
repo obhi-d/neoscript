@@ -16,23 +16,33 @@ struct fileout_command_handler : public neo::command_handler
     assert(file.is_open());
   }
 
-  static bool print(neo::command_handler* _, neo::state_machine const& ctx,
-                    neo::command const& cmd)
+  static neo::command_handler::results print(neo::command_handler*     _,
+                                             neo::state_machine const& ctx,
+                                             neo::command const&       cmd)
   {
     return static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
   }
-  static bool enter_scope(neo::command_handler*     _,
-                          neo::state_machine const& ctx, std::string_view name)
+
+  static neo::command_handler::results print_enter_scope(
+      neo::command_handler* _, neo::state_machine const& ctx,
+      neo::command const& cmd)
   {
-    return static_cast<fileout_command_handler*>(_)->enter_scope_m(ctx, name);
-  }
-  static bool leave_scope(neo::command_handler*     _,
-                          neo::state_machine const& ctx, std::string_view name)
-  {
-    return static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
+    auto result = static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
+    if (result == neo::command_handler::results::e_success && cmd.is_scoped())
+      return static_cast<fileout_command_handler*>(_)->enter_scope_m(
+          ctx, cmd.name());
+    else
+      return result;
   }
 
-  bool print_m(neo::state_machine const& ctx, neo::command const& cmd)
+  static void leave_scope(neo::command_handler*     _,
+                          neo::state_machine const& ctx, std::string_view name)
+  {
+    static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
+  }
+
+  neo::command_handler::results print_m(neo::state_machine const& ctx,
+                                        neo::command const&       cmd)
   {
     file << scope << cmd.name() << " --> (";
     auto const& params = cmd.params().value();
@@ -46,17 +56,18 @@ struct fileout_command_handler : public neo::command_handler
     }
     file << ")\n";
     last_cmd = cmd.name();
-    return true;
+    return neo::command_handler::results::e_success;
   }
 
-  bool enter_scope_m(neo::state_machine const&, std::string_view name)
+  neo::command_handler::results enter_scope_m(neo::state_machine const&,
+                                              std::string_view name)
   {
     scope += last_cmd;
     scope += '/';
-    return true;
+    return neo::command_handler::results::e_success;
   }
 
-  bool leave_scope_m(neo::state_machine const&, std::string_view name)
+  void leave_scope_m(neo::state_machine const&, std::string_view name)
   {
     scope.pop_back();
     std::size_t pos = scope.find_last_of('/');
@@ -65,7 +76,6 @@ struct fileout_command_handler : public neo::command_handler
     else
       pos++;
     scope.erase(pos, scope.length() - pos);
-    return true;
   }
 
   std::ofstream file;
@@ -94,12 +104,11 @@ TEST_CASE("Validate syntax files", "[file]")
 {
   namespace fs = std::filesystem;
 
-  neo::interpreter test_interpreter;
-  std::uint32_t    root = test_interpreter.ensure_region_root("");
-  test_interpreter.add_scoped_command(root, "*",
-                                      &fileout_command_handler::print,
-                                      &fileout_command_handler::enter_scope,
-                                      &fileout_command_handler::leave_scope);
+  neo::registry test_interpreter;
+  std::uint32_t root = test_interpreter.ensure_region_root("");
+  test_interpreter.add_scoped_command(
+      root, "*", &fileout_command_handler::print_enter_scope,
+      &fileout_command_handler::leave_scope);
 
   for (auto& p : fs::directory_iterator("../dataset"))
   {

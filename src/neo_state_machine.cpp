@@ -1,27 +1,32 @@
 #include <fstream>
-#include <neo_interpreter.hpp>
+
+// neo
+#include <neo_registry.hpp>
 #include <neo_state_machine.hpp>
+
+// interpreter
+#include <detail/neo_interpreter.hpp>
 
 namespace neo
 {
 
 const command_template state_machine::null_template_;
-state_machine::state_machine(interpreter& interp, command_handler* handler,
+state_machine::state_machine(registry const& reg, command_handler* handler,
                              state_machine::option_flags flags)
     : flags_(flags), importer_(&state_machine::default_import_handler),
-      interpreter_(interp), cmd_handler_(handler)
+      registry_(reg), cmd_handler_(handler)
 {}
 
 void state_machine::start_region(std::string&& region)
 {
-  if (block_stack_.size() > 1)
+  if (block_stack_.size() > 1 || skip_ > 0)
   {
     push_error(loc(), "syntax error, missing '}'");
     return;
   }
 
   block_stack_.clear();
-  auto block = interpreter_.get_region_root(region);
+  auto block = registry_.get_region_root(region);
   block_stack_.push_back(block);
   this->region_ = std::move(region);
 }
@@ -39,17 +44,24 @@ void state_machine::consume(neo::command&& cmd)
   {
     if (resolver_stack_)
       resolve(cmd);
-    auto [block, scoped] = interpreter_.execute(*this, cmd_handler_,
-                                                this->block_stack_.back(), cmd);
-    if (block == interpreter::k_failure)
+    auto [block, result] = neo::detail::interpreter::execute(
+        registry_, *this, cmd_handler_, this->block_stack_.back(), cmd);
+    switch (result)
     {
+    case command_handler::results::e_success:
+      if (cmd.is_scoped() && block != registry::k_invalid_id)
+        block_stack_.push_back(block);
+      break;
+    case command_handler::results::e_fail_and_stop:
       push_error(loc(), "command execution failure");
       return;
-    }
-    if (cmd.is_scoped() && scoped)
-    {
-      block_stack_.push_back(block);
-      interpreter_.begin_scope(*this, cmd_handler_, block, cmd.name());
+    case command_handler::results::e_skip_block:
+      if (!cmd.is_scoped())
+        return;
+      [[fallthrough]];
+    case command_handler::results::e_skip_rest:
+      skip_++;
+      break;
     }
   }
 }
@@ -126,15 +138,16 @@ void state_machine::end_block()
       push_error(loc(), "syntax error, unexpected '}'");
     else
     {
-      interpreter_.end_scope(*this, cmd_handler_, block_stack_.back(), "");
+      neo::detail::interpreter::end_scope(registry_, *this, cmd_handler_,
+                                          block_stack_.back(), "");
       block_stack_.pop_back();
     }
   }
 }
 void state_machine::start_region(std::string&& region_id, std::string&& content)
 {
-  interpreter_.handle_text_region(cmd_handler_, *this, std::move(region_id),
-                                  std::move(content));
+  neo::detail::interpreter::handle_text_region(
+      registry_, cmd_handler_, *this, std::move(region_id), std::move(content));
 }
 void state_machine::import_script(std::string const& file_id)
 {

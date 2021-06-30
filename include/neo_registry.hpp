@@ -1,27 +1,44 @@
 #pragma once
-#include <neo_command.hpp>
-#include <neo_state_machine.hpp>
+
+#include "neo_command.hpp"
+#include "neo_state_machine.hpp"
+
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
 
 namespace neo
 {
+namespace detail
+{
+class interpreter;
+}
 struct command_handler
 {
+  enum class results
+  {
+    e_success = 0,
+    e_skip_block, // for blocked commands, skip this block to next one
+    e_skip_rest,  // skip the rest of the commands in current block, and do not
+                  // enter the current command if its a block command
+    e_fail_and_stop // stop parsing any further
+  };
 };
-using command_hook = bool (*)(command_handler* obj, neo::state_machine const&,
-                              neo::command const&);
-using block_hook =
-    bool (*)(command_handler* obj, neo::state_machine const&,
+
+using command_hook = command_handler::results (*)(command_handler* obj,
+                                                  neo::state_machine const&,
+                                                  neo::command const&);
+using command_end_hook =
+    void (*)(command_handler* obj, neo::state_machine const&,
              std::string_view hook_name); // scope_name is "" at end of scope
 
 using textreg_hook = void (*)(command_handler* obj, neo::state_machine const&,
                               std::string&& name, std::string&& content);
 
-using command_id = std::uint32_t;
+using command_id  = std::uint32_t;
+using registry_id = std::uint32_t;
 
-class interpreter
+class registry
 {
   struct block;
   struct handler
@@ -37,70 +54,17 @@ class interpreter
   {
     std::unordered_map<std::string_view, handler> events_;
     command_hook                                  any_;
-    block_hook                                    begin_ = nullptr;
-    block_hook                                    end_   = nullptr;
+    command_end_hook                              end_ = nullptr;
   };
 
 public:
-  enum : std::uint32_t
-  {
-    k_failure = 0xffffffff
-  };
+  static constexpr std::uint32_t k_invalid_id = 0xffffffff;
 
-  inline interpreter()
+  registry()
   {
     reg_block_mappings_[""] = 0;
     blocks_.emplace_back();
   }
-
-  inline bool begin_scope(neo::state_machine& ctx, command_handler* obj,
-                          std::uint32_t block, std::string_view scope_id)
-  {
-    return blocks_[block].begin_
-               ? std::invoke(blocks_[block].begin_, obj, ctx, scope_id)
-               : true;
-  }
-
-  inline bool end_scope(neo::state_machine& ctx, command_handler* obj,
-                        std::uint32_t block, std::string_view scope_id)
-  {
-    return blocks_[block].end_
-               ? std::invoke(blocks_[block].end_, obj, ctx, scope_id)
-               : true;
-  }
-
-  inline std::tuple<std::uint32_t, bool> execute(neo::state_machine& ctx,
-                                                 command_handler*    obj,
-                                                 std::uint32_t       block,
-                                                 neo::command&       cmd)
-  {
-    auto& block_ref = blocks_[block];
-    auto  it        = block_ref.events_.find(cmd.name());
-    if (it != block_ref.events_.end())
-    {
-      if ((*it).second.cbk_)
-      {
-        if (!std::invoke((*it).second.cbk_, obj, ctx, cmd))
-          return {k_failure, false};
-      }
-      if (cmd.is_scoped())
-        block = (*it).second.sub_handlers_;
-    }
-    else
-    {
-      if (!std::invoke(block_ref.any_, obj, ctx, cmd))
-        return {k_failure, false};
-    }
-    return {block, cmd.is_scoped()};
-  }
-
-  inline std::uint32_t get_region_root(std::string_view name) const
-  {
-    auto it = reg_block_mappings_.find(name);
-    if (it != reg_block_mappings_.end())
-      return (*it).second;
-    return 0;
-  } /// region type to block mapping
 
   inline std::uint32_t ensure_region_root(std::string_view name)
   {
@@ -117,22 +81,19 @@ public:
   inline command_id add_command(command_id parent_scope, std::string_view cmd,
                                 command_hook callback = nullptr)
   {
-    return internal_add_command(parent_scope, cmd,
-                                static_cast<command_hook>(callback), false,
-                                nullptr, nullptr);
+    return internal_add_command(
+        parent_scope, cmd, static_cast<command_hook>(callback), false, nullptr);
   }
 
   /// A scoped command registration
   inline command_id add_scoped_command(command_id       parent_scope,
                                        std::string_view cmd,
-                                       command_hook     callback    = nullptr,
-                                       block_hook       block_begin = nullptr,
-                                       block_hook       block_end   = nullptr)
+                                       command_hook     callback  = nullptr,
+                                       command_end_hook block_end = nullptr)
   {
     return internal_add_command(parent_scope, cmd,
                                 static_cast<command_hook>(callback), true,
-                                static_cast<block_hook>(block_begin),
-                                static_cast<block_hook>(block_end));
+                                static_cast<command_end_hook>(block_end));
   }
 
   /// Alias the behaviour of an already registered command with a new
@@ -150,7 +111,7 @@ public:
                             std::string_view dst_path)
   {
     std::uint32_t par_block = find_parent_block(src_path);
-    if (par_block == k_failure)
+    if (par_block == k_invalid_id)
       return;
     std::uint32_t dst_block              = build_parent_block(dst_path);
     blocks_[dst_block].events_[dst_path] = blocks_[par_block].events_[src_path];
@@ -161,13 +122,13 @@ public:
     text_reg_handler_ = handler;
   }
 
-  inline void handle_text_region(neo::command_handler*     obj,
-                                 neo::state_machine const& ctx,
-                                 std::string&& region_id, std::string&& content)
+  inline std::uint32_t get_region_root(std::string_view name) const
   {
-    if (text_reg_handler_)
-      text_reg_handler_(obj, ctx, std::move(region_id), std::move(content));
-  }
+    auto it = reg_block_mappings_.find(name);
+    if (it != reg_block_mappings_.end())
+      return (*it).second;
+    return 0;
+  } /// region type to block mapping
 
 private:
   /// All sub-commands must be registred right after
@@ -176,8 +137,7 @@ private:
                                          std::string_view cmd,
                                          command_hook     callback  = nullptr,
                                          bool             is_scoped = false,
-                                         block_hook       begin     = nullptr,
-                                         block_hook       end       = nullptr)
+                                         command_end_hook end       = nullptr)
   {
     assert(parent_scope < blocks_.size());
     std::uint32_t id = 0xffffffff;
@@ -192,8 +152,7 @@ private:
         id = static_cast<std::uint32_t>(blocks_.size());
         blocks_.resize(blocks_.size() + 1);
       }
-      blocks_[id].begin_ = begin;
-      blocks_[id].end_   = end;
+      blocks_[id].end_ = end;
     }
     auto& block_ref = blocks_[parent_scope];
     if (cmd == "*")
@@ -201,16 +160,6 @@ private:
     else
       block_ref.events_[cmd] = handler(callback, id);
     return id;
-  }
-
-  inline void internal_add_scope(command_id parent_scope, command_id new_scope,
-                                 block_hook begin, block_hook end)
-  {
-    if (parent_scope >= blocks_.size())
-      blocks_.resize(parent_scope + 1);
-    if (new_scope >= blocks_.size())
-      blocks_.resize(new_scope + 1);
-    auto& block_ref = blocks_[parent_scope];
   }
 
   inline std::uint32_t find_parent_block(std::string_view& src_path) const
@@ -221,7 +170,7 @@ private:
       auto pos = src_path.find_first_of('/');
       src_reg  = src_path.substr(1, pos);
       if (pos == std::string_view::npos)
-        return k_failure;
+        return k_invalid_id;
       src_path = src_path.substr(pos + 1);
     }
 
@@ -233,7 +182,7 @@ private:
       auto ss = src_path.substr(0, pos);
       auto it = blocks_[root].events_.find(ss);
       if (it == blocks_[root].events_.end())
-        return k_failure;
+        return k_invalid_id;
       root     = (*it).second.sub_handlers_;
       src_path = src_path.substr(pos);
     }
@@ -248,7 +197,7 @@ private:
       auto pos = src_path.find_first_of('/');
       src_reg  = src_path.substr(1, pos);
       if (pos == std::string_view::npos)
-        return k_failure;
+        return k_invalid_id;
       src_path = src_path.substr(pos + 1);
     }
 
@@ -272,11 +221,12 @@ private:
     return root;
   }
 
-private:
   textreg_hook text_reg_handler_ = nullptr;
   std::unordered_map<std::string_view, std::uint32_t> reg_block_mappings_;
   /// block 0 is always the root
   std::vector<block> blocks_;
+
+  friend class ::neo::detail::interpreter;
 };
-using interpreter_id = std::uint32_t;
+
 } // namespace neo

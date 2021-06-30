@@ -79,94 +79,115 @@ script: statement
 		| statement script      
 
 statement:                                   
-		| SEMICOLON                              
-		| REGION_ID                              { _.start_region(std::move($1));                          }
-		| commanddecl                            { _.consume(std::move($1));                               }
-		| templatedecl                           { _.add_template(std::move($1));                          }
-		| instancedecl                           { _.consume(std::move($1));                               }
-		| RBRACKET                               { _.end_block();                                          }
-		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));           }
-		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                         }
+		  SEMICOLON                              {                                                               }
+		| commanddecl                            { if (!_.skip()) { _.consume(std::move($1));  }                 }
+		| templatedecl                           { if (!_.skip()) _.add_template(std::move($1));                 }
+		| instancedecl                           { if (!_.skip()) { _.consume(std::move($1));  }                 }
+		| RBRACKET                               { if (!_.skip()) _.end_block(); else _.exit_skip_scope();       }
+		| REGION_ID                              { _.start_region(std::move($1));                                }
+		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));                 }
+		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                               }
 
 
-template_args.0.N:			
+template_args.0.N:	/* empty string */		
 					| IDENTIFIER	{ 
-						std::vector<std::string> args; 
-						args.push_back($1); 
-						$$ = std::move(args); 
+						if (!_.skip())
+						{
+							std::vector<std::string> args; 
+							args.push_back($1); 
+							$$ = std::move(args); 
+						}
 					}
 					| template_args.0.N COMMA IDENTIFIER  { 
-						$$ = std::move($1);
-						$$.push_back($3); 
+						if (!_.skip())
+						{
+							$$ = std::move($1);
+							$$.push_back($3); 
+						}
 					}
 					;
 
 templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
+						if (!_.skip())
 								$$ = std::move(_.make_command_template(
 											std::move($3), std::move($5)));
 						 }
 			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET commanddecl {
+				   		if (!_.skip())
 				 				$$ = std::move(_.make_command_template(std::move($2),
 							        std::move($4), std::move($6)));
 				     }
 				;
 
-commanddecl: SEMICOLON                          
-		 | IDENTIFIER parameters.0.N SEMICOLON      { $$ = std::move(_.make_command(std::move($1), std::move($2))); }
-		 | IDENTIFIER parameters.0.N LBRACKET       { $$ = std::move(_.make_command(std::move($1), std::move($2), true)); }
+commanddecl: 
+		   IDENTIFIER parameters.0.N SEMICOLON      { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2))); }
+		 | IDENTIFIER parameters.0.N LBRACKET       { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2), true)); else _.enter_skip_scope(); }
 		 
-instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
-		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
+instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
+		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
 
-parameters.0.N:                       
-				  | parameters.0.N parameter  { $1.append(std::move($2)); $$ = std::move($1); }
+parameters.0.N:   /* empty string */                    
+				  | parameters.0.N parameter  { if (!_.skip()) { $1.append(std::move($2)); $$ = std::move($1); } }
 				  | parameters.0.N LBRACES special_parameters.0.N RBRACES { 
-							$1.append_expanded(std::move($3)); $$ = std::move($1); 
+							if (!_.skip()) { $1.append_expanded(std::move($3)); $$ = std::move($1);  }
 						}
 				  ;
 
-special_parameters.0.N:            
+special_parameters.0.N:     /* empty string */       
 			| special_parameter       { 
+				if (!_.skip())
+				{
 					command::list l; 
 					l.emplace_back(std::move($1)); 
 					$$ = std::move(l); 
 				}
+			}
 			| special_parameters.0.N COMMA special_parameter 
 			{ 
-				command::list list;
-				if ($1.index() == 1) 
-					list.emplace_back(std::move($1));
-				else if ($1.index() == 2) 
-					list = std::get<command::list>(std::move($1));
+				if (!_.skip())
+				{
+					command::list list;
+					if ($1.index() == 1) 
+						list.emplace_back(std::move($1));
+					else if ($1.index() == 2) 
+						list = std::get<command::list>(std::move($1));
 
-				list.emplace_back(std::move($3));
-				$$ = std::move(list);
+					list.emplace_back(std::move($3));
+					$$ = std::move(list);
+				}
 			}
 			;
 
 special_parameter: IDENTIFIER  ASSIGN  parameter 
 			{ 
-				neo::command::parameters::set_name($3, std::move($1)); 
-				$$ = std::move($3);	
+				if (!_.skip())
+				{
+					neo::command::parameters::set_name($3, std::move($1)); 
+					$$ = std::move($3);	
+				}
 			}
 			;
 
-parameter: STRING_LITERAL						      { $$ = command::single(std::move($1)); }
-			| IDENTIFIER                        { $$ = command::single(std::move($1)); }
-			| LSQBRACKET list.0.N RSQBRACKET    { $$ = std::move($2); }
+parameter: STRING_LITERAL						      { if (!_.skip()) $$ = command::single(std::move($1)); }
+			| IDENTIFIER                        { if (!_.skip()) $$ = command::single(std::move($1)); }
+			| LSQBRACKET list.0.N RSQBRACKET    { if (!_.skip()) $$ = std::move($2); }
 			;
 			
-list: parameter					  { $$ = std::move($1); }
-	| special_parameter			{ $$ = std::move($1); }
+list: parameter					  { if (!_.skip()) $$ = std::move($1); }
+	| special_parameter			{ if (!_.skip()) $$ = std::move($1); }
     ;
 	
-list.0.N:								
+list.0.N:	/* empty string */							
 		|  list                         { 
+			if (!_.skip())
+			{
 				command::list list; 
 				list.emplace_back(std::move($1)); 
 				$$ = std::move(list);
 			}
+		}
 	  |  list.0.N COMMA list          { 
+		  if (!_.skip()) {
 				command::list list; 
 				if ($1.index() == 1) 
 					list.emplace_back(std::move($1));
@@ -175,6 +196,7 @@ list.0.N:
 				list.emplace_back(std::move($3));
 				$$ = std::move(list);
 		  }
+	  }
 	  ;
 
 
