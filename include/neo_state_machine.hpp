@@ -39,12 +39,12 @@ public:
   using location_type = neo::location;
 
   void start_region(std::string&&);
-  void consume(neo::command&& cmd);
+  bool consume(neo::command&& cmd);
   void add_template(neo::command_template&&);
   void push_template(neo::command_template const&);
   void record_template(neo::command_template&);
   void remove_template(std::string const&);
-  void consume(neo::command_instance&&);
+  bool consume(neo::command_instance&&);
   void end_block();
   void start_region(std::string&& region_id, std::string&& content);
   void import_script(std::string const& file_id);

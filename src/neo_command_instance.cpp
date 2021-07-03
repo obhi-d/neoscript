@@ -6,7 +6,7 @@
 namespace neo
 {
 
-void command_instance::build(neo::state_machine&                ctx,
+void command_instance::build(neo::state_machine&          ctx,
                              neo::command_template const& tmpl)
 {
   auto const& params  = tmpl.get_params();
@@ -37,13 +37,13 @@ void command_instance::build(neo::state_machine&                ctx,
       param_list_);
 }
 
-void command_instance::visit(neo::state_machine& ctx, bool extend)
+bool command_instance::visit(neo::state_machine& ctx, bool extend)
 {
   auto const& templ = ctx.find_template(template_);
   if (ctx.fail_bit())
-    return;
+    return true;
   build(ctx, templ);
-  templ.visit(ctx, extend);
+  return templ.visit(ctx, extend);
 }
 
 std::optional<command::param_t> command_instance::resolve(

@@ -16,19 +16,19 @@ struct fileout_command_handler : public neo::command_handler
     assert(file.is_open());
   }
 
-  static neo::command_handler::results print(neo::command_handler*     _,
-                                             neo::state_machine const& ctx,
-                                             neo::command const&       cmd)
+  static neo::retcode print(neo::command_handler*     _,
+                            neo::state_machine const& ctx,
+                            neo::command const&       cmd)
   {
     return static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
   }
 
-  static neo::command_handler::results print_enter_scope(
-      neo::command_handler* _, neo::state_machine const& ctx,
-      neo::command const& cmd)
+  static neo::retcode print_enter_scope(neo::command_handler*     _,
+                                        neo::state_machine const& ctx,
+                                        neo::command const&       cmd)
   {
     auto result = static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
-    if (result == neo::command_handler::results::e_success && cmd.is_scoped())
+    if (result == neo::retcode::e_success && cmd.is_scoped())
       return static_cast<fileout_command_handler*>(_)->enter_scope_m(
           ctx, cmd.name());
     else
@@ -41,8 +41,7 @@ struct fileout_command_handler : public neo::command_handler
     static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
   }
 
-  neo::command_handler::results print_m(neo::state_machine const& ctx,
-                                        neo::command const&       cmd)
+  neo::retcode print_m(neo::state_machine const& ctx, neo::command const& cmd)
   {
     file << scope << cmd.name() << " --> (";
     auto const& params = cmd.params().value();
@@ -56,15 +55,14 @@ struct fileout_command_handler : public neo::command_handler
     }
     file << ")\n";
     last_cmd = cmd.name();
-    return neo::command_handler::results::e_success;
+    return neo::retcode::e_success;
   }
 
-  neo::command_handler::results enter_scope_m(neo::state_machine const&,
-                                              std::string_view name)
+  neo::retcode enter_scope_m(neo::state_machine const&, std::string_view name)
   {
     scope += last_cmd;
     scope += '/';
-    return neo::command_handler::results::e_success;
+    return neo::retcode::e_success;
   }
 
   void leave_scope_m(neo::state_machine const&, std::string_view name)

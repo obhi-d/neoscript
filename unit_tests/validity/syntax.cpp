@@ -44,8 +44,7 @@ std::string to_string(neo::command::param_t const& param)
 
 struct test_command_handler : public neo::command_handler
 {
-  neo::command_handler::results generate(neo::state_machine const&,
-                                         neo::command const& cmd)
+  neo::retcode generate(neo::state_machine const&, neo::command const& cmd)
   {
     output += cmd.name();
     output += " --> (";
@@ -59,11 +58,11 @@ struct test_command_handler : public neo::command_handler
       output += to_string(val);
     }
     output += ")\n";
-    return neo::command_handler::results::e_success;
+    return neo::retcode::e_success;
   }
 
-  neo::command_handler::results print_region(neo::state_machine const& ctx,
-                                             neo::command const&       cmd)
+  neo::retcode print_region(neo::state_machine const& ctx,
+                            neo::command const&       cmd)
   {
     auto const& params = cmd.params().value();
     bool        first  = true;
@@ -85,7 +84,7 @@ struct test_command_handler : public neo::command_handler
         break;
     }
     this->output = output;
-    return neo::command_handler::results::e_success;
+    return neo::retcode::e_success;
   }
 
   void add_text(neo::state_machine const&, std::string&& name,
@@ -110,7 +109,7 @@ TEST_CASE("Scoped command", "[region0]")
   test_interpreter.add_command(
       root, "echo",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results
+         neo::command const& cmd) -> neo::retcode
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
   test_command_handler handler;
   neo::state_machine   state_machine(test_interpreter, &handler, 0);
@@ -137,7 +136,7 @@ TEST_CASE("Text region", "[region1]")
   test_interpreter.add_command(
       root, "print",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results {
+         neo::command const& cmd) -> neo::retcode {
         return static_cast<test_command_handler*>(_)->print_region(ctx, cmd);
       });
   test_interpreter.set_text_region_handler(
@@ -174,9 +173,9 @@ TEST_CASE("Any command", "[region2]")
   std::shared_ptr<std::istream> iss =
       std::make_shared<std::istringstream>(test);
 
-  neo::command_hook lambda =
-      [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results
+  neo::command_hook lambda = [](neo::command_handler*     _,
+                                neo::state_machine const& ctx,
+                                neo::command const&       cmd) -> neo::retcode
   { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); };
   auto root = test_interpreter.ensure_region_root("");
   test_interpreter.add_command(root, "*", lambda);
@@ -212,7 +211,7 @@ TEST_CASE("Block test", "[block]")
   test_interpreter.add_scoped_command(
       root, "*",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results
+         neo::command const& cmd) -> neo::retcode
       { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
 
   test_command_handler handler;
@@ -242,13 +241,13 @@ TEST_CASE("Skip test", "[skip]")
   auto scope = reg.add_scoped_command(
       root, "simple",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results
-      { return neo::command_handler::results::e_skip_block; });
+         neo::command const& cmd) -> neo::retcode
+      { return neo::retcode::e_skip_block; });
 
   reg.add_command(scope, "inner",
                   [](neo::command_handler* _, neo::state_machine const& ctx,
-                     neo::command const& cmd) -> neo::command_handler::results
-                  { return neo::command_handler::results::e_fail_and_stop; });
+                     neo::command const& cmd) -> neo::retcode
+                  { return neo::retcode::e_fail_and_stop; });
 
   neo::state_machine state_machine(reg, nullptr, 0);
   state_machine.parse("memory", iss);
@@ -267,8 +266,8 @@ TEST_CASE("Skip test rest of commands", "[skip2]")
   auto scope = reg.add_scoped_command(
       root, "simple",
       [](neo::command_handler* _, neo::state_machine const& ctx,
-         neo::command const& cmd) -> neo::command_handler::results
-      { return neo::command_handler::results::e_success; });
+         neo::command const& cmd) -> neo::retcode
+      { return neo::retcode::e_success; });
 
   struct handler : neo::command_handler
   {
@@ -277,21 +276,21 @@ TEST_CASE("Skip test rest of commands", "[skip2]")
   handler h;
   reg.add_command(scope, "inner",
                   [](neo::command_handler* _, neo::state_machine const& ctx,
-                     neo::command const& cmd) -> neo::command_handler::results
+                     neo::command const& cmd) -> neo::retcode
                   {
                     static_cast<handler*>(_)->inner_call++;
-                    return neo::command_handler::results::e_skip_rest;
+                    return neo::retcode::e_skip_rest;
                   });
 
   reg.add_command(scope, "next",
                   [](neo::command_handler* _, neo::state_machine const& ctx,
-                     neo::command const& cmd) -> neo::command_handler::results
-                  { return neo::command_handler::results::e_fail_and_stop; });
+                     neo::command const& cmd) -> neo::retcode
+                  { return neo::retcode::e_fail_and_stop; });
 
   reg.add_command(scope, "porchain",
                   [](neo::command_handler* _, neo::state_machine const& ctx,
-                     neo::command const& cmd) -> neo::command_handler::results
-                  { return neo::command_handler::results::e_fail_and_stop; });
+                     neo::command const& cmd) -> neo::retcode
+                  { return neo::retcode::e_fail_and_stop; });
 
   neo::state_machine state_machine(reg, &h, 0);
   state_machine.parse("memory", iss);

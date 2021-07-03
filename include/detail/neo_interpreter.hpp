@@ -20,7 +20,7 @@ public:
       std::invoke(reg.blocks_[block].end_, obj, ctx, scope_id);
   }
 
-  static inline std::tuple<std::uint32_t, command_handler::results> execute(
+  static inline std::tuple<std::uint32_t, neo::retcode> execute(
       neo::registry const& reg, neo::state_machine& ctx, command_handler* obj,
       std::uint32_t block, neo::command& cmd)
   {
@@ -45,7 +45,7 @@ public:
                                std::invoke(block_ref.any_, obj, ctx, cmd));
       }
     }
-    return {new_block, command_handler::results::e_success};
+    return {new_block, neo::retcode::e_success};
   }
 
   static inline void handle_text_region(neo::registry const&      reg,

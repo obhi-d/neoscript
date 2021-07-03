@@ -13,27 +13,33 @@ namespace detail
 {
 class interpreter;
 }
-struct command_handler
+enum class retcode
 {
-  enum class results
-  {
-    e_success = 0,
-    e_skip_block, // for blocked commands, skip this block to next one
-    e_skip_rest,  // skip the rest of the commands in current block, and do not
+  e_success = 0,
+  e_success_stop,
+  e_skip_block,   // for blocked commands, skip this block to next one
+  e_skip_rest,    // skip the rest of the commands in current block, and do not
                   // enter the current command if its a block command
-    e_fail_and_stop // stop parsing any further
-  };
+  e_fail_and_stop // stop parsing any further
 };
 
-using command_hook = command_handler::results (*)(command_handler* obj,
-                                                  neo::state_machine const&,
-                                                  neo::command const&);
+struct command_handler
+{
+};
+
+using command_hook = neo::retcode (*)(command_handler* obj,
+                                      neo::state_machine const&,
+                                      neo::command const&);
 using command_end_hook =
     void (*)(command_handler* obj, neo::state_machine const&,
-             std::string_view hook_name); // scope_name is "" at end of scope
+             std::string_view cmd_name); // scope_name is "" at end of scope
 
 using textreg_hook = void (*)(command_handler* obj, neo::state_machine const&,
                               std::string&& name, std::string&& content);
+
+using region_hook = neo::retcode (*)(command_handler* obj,
+                                     neo::state_machine const&,
+                                     std::string_view);
 
 using command_id  = std::uint32_t;
 using registry_id = std::uint32_t;
@@ -50,10 +56,11 @@ class registry
         : cbk_(std::move(cbk)), sub_handlers_(sub)
     {}
   };
+
   struct block
   {
     std::unordered_map<std::string_view, handler> events_;
-    command_hook                                  any_;
+    command_hook                                  any_ = nullptr;
     command_end_hook                              end_ = nullptr;
   };
 

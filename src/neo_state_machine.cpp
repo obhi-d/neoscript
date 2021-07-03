@@ -30,7 +30,7 @@ void state_machine::start_region(std::string&& region)
   block_stack_.push_back(block);
   this->region_ = std::move(region);
 }
-void state_machine::consume(neo::command&& cmd)
+bool state_machine::consume(neo::command&& cmd)
 {
   if (record_stack_.size() > 0)
   {
@@ -48,22 +48,25 @@ void state_machine::consume(neo::command&& cmd)
         registry_, *this, cmd_handler_, this->block_stack_.back(), cmd);
     switch (result)
     {
-    case command_handler::results::e_success:
+    case neo::retcode::e_success:
       if (cmd.is_scoped() && block != registry::k_invalid_id)
         block_stack_.push_back(block);
       break;
-    case command_handler::results::e_fail_and_stop:
+    case neo::retcode::e_success_stop:
+      return false;
+    case neo::retcode::e_fail_and_stop:
       push_error(loc(), "command execution failure");
-      return;
-    case command_handler::results::e_skip_block:
+      return true;
+    case neo::retcode::e_skip_block:
       if (!cmd.is_scoped())
-        return;
+        return true;
       [[fallthrough]];
-    case command_handler::results::e_skip_rest:
+    case neo::retcode::e_skip_rest:
       skip_++;
       break;
     }
   }
+  return true;
 }
 void state_machine::add_template(neo::command_template&& cmd_templ)
 {
@@ -104,7 +107,7 @@ void state_machine::remove_template(std::string const& name)
     it->second.pop_back();
   }
 }
-void state_machine::consume(neo::command_instance&& cmd_inst)
+bool state_machine::consume(neo::command_instance&& cmd_inst)
 {
   if (record_stack_.size() > 0)
   {
@@ -122,9 +125,11 @@ void state_machine::consume(neo::command_instance&& cmd_inst)
                         std::placeholders::_1, std::placeholders::_2);
     res.next_       = resolver_stack_;
     resolver_stack_ = &res;
-    cmd_inst.visit(*this, cmd_inst.is_extended());
+    bool result     = cmd_inst.visit(*this, cmd_inst.is_extended());
     resolver_stack_ = resolver_stack_->next_;
+    return result;
   }
+  return true;
 }
 void state_machine::end_block()
 {

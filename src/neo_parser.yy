@@ -79,14 +79,14 @@ script: statement
 		| statement script      
 
 statement:                                   
-		  SEMICOLON                              {                                                               }
-		| commanddecl                            { if (!_.skip()) { _.consume(std::move($1));  }                 }
-		| templatedecl                           { if (!_.skip()) _.add_template(std::move($1));                 }
-		| instancedecl                           { if (!_.skip()) { _.consume(std::move($1));  }                 }
-		| RBRACKET                               { if (!_.skip()) _.end_block(); else _.exit_skip_scope();       }
-		| REGION_ID                              { _.start_region(std::move($1));                                }
-		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));                 }
-		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                               }
+		  SEMICOLON                              {                                                                      }
+		| commanddecl                            { if (!_.skip()) { if(!_.consume(std::move($1))) { YYACCEPT; }   }     }
+		| templatedecl                           { if (!_.skip()) _.add_template(std::move($1));                        }
+		| instancedecl                           { if (!_.skip()) { if(!_.consume(std::move($1))) { YYACCEPT; }   }     }
+		| RBRACKET                               { if (!_.skip()) _.end_block(); else _.exit_skip_scope();              }
+		| REGION_ID                              { _.start_region(std::move($1));                                       }
+		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));                        }
+		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                                      }
 
 
 template_args.0.N:	/* empty string */		

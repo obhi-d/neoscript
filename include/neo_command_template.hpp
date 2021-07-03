@@ -73,8 +73,8 @@ public:
     node                node_;
     std::vector<record> sub_;
 
-    void pre_visit(neo::state_machine&) const;
-    void visit(neo::state_machine&) const;
+    bool pre_visit(neo::state_machine&) const;
+    bool visit(neo::state_machine&) const;
     void post_visit(neo::state_machine&) const;
 
     record() = default;
@@ -124,7 +124,7 @@ public:
     return std::get<template_record>(main_.node_).cmd_.is_scoped();
   }
 
-  void visit(neo::state_machine&, bool extended) const;
+  bool visit(neo::state_machine&, bool extended) const;
 
   std::vector<std::string> const& get_params() const
   {
