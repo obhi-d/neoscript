@@ -63,6 +63,7 @@ YY_DECL;
 %token <std::string> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
 
 // Types
+%type <std::string> commandname
 %type <command> commanddecl
 %type <command_instance> instancedecl
 %type <command::parameters> parameters.0.N 
@@ -119,9 +120,12 @@ templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
 				     }
 				;
 
+commandname:  IDENTIFIER { $$ = std::move($1); }
+			| IDENTIFIER ASSIGN { $$ = std::move($1); }
+
 commanddecl: 
-		   IDENTIFIER parameters.0.N SEMICOLON      { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2))); }
-		 | IDENTIFIER parameters.0.N LBRACKET       { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2), true)); else _.enter_skip_scope(); }
+		   commandname parameters.0.N SEMICOLON      { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2))); }
+		 | commandname parameters.0.N LBRACKET       { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2), true)); else _.enter_skip_scope(); }
 		 
 instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
 		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
