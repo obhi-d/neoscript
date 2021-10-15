@@ -92,6 +92,7 @@ BLANK   [ \t]
 "("                                return neo::parser_impl::make_LBRACES(_.loc());
 ")"                                return neo::parser_impl::make_RBRACES(_.loc());
 "="                                return neo::parser_impl::make_ASSIGN(_.loc());
+":"                                return neo::parser_impl::make_COLON(_.loc());
 \"                                 BEGIN(STATE_STR);  _.start();
 [\n]+  		  	                     _.loc().lines((std::uint32_t)yyleng); _.loc().step();
 {BLANK}+   	                       _.loc().step();

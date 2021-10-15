@@ -55,6 +55,7 @@ YY_DECL;
 	LBRACES    "("
 	RBRACES    ")"
 	ASSIGN     "="
+	COLON      ":"
 	TEMPLATE   "template"
 	USING      "using"
 	IMPORT	   "import"
@@ -122,6 +123,7 @@ templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
 
 commandname:  IDENTIFIER { $$ = std::move($1); }
 			| IDENTIFIER ASSIGN { $$ = std::move($1); }
+			| IDENTIFIER COLON { $$ = std::move($1); }
 
 commanddecl: 
 		   commandname parameters.0.N SEMICOLON      { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2))); }
