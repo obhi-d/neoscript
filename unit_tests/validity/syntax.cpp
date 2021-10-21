@@ -141,6 +141,7 @@ TEST_CASE("Text region", "[region1]")
       });
   test_interpreter.set_text_region_handler(
       [](neo::command_handler* _, neo::state_machine const& ctx,
+         std::string&& id, 
          std::string&& name, std::string&& content)
       {
         return static_cast<test_command_handler*>(_)->add_text(

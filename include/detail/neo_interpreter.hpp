@@ -51,11 +51,13 @@ public:
   static inline void handle_text_region(neo::registry const&      reg,
                                         neo::command_handler*     obj,
                                         neo::state_machine const& ctx,
+                                        std::string&&             region_type,
                                         std::string&&             region_id,
                                         std::string&&             content)
   {
     if (reg.text_reg_handler_)
-      reg.text_reg_handler_(obj, ctx, std::move(region_id), std::move(content));
+      reg.text_reg_handler_(obj, ctx, std::move(region_type),
+                            std::move(region_id), std::move(content));
   }
 
 private:

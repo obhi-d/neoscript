@@ -46,7 +46,8 @@ public:
   void remove_template(std::string const&);
   bool consume(neo::command_instance&&);
   void end_block();
-  void start_region(std::string&& region_id, std::string&& content);
+  void start_region(std::string&& region_id,
+                    std::string&& content);
   void import_script(std::string const& file_id);
   void parse(std::string_view                     src_name,
              std::shared_ptr<std::istream> const& ifile);
@@ -63,6 +64,9 @@ public:
   void               put(std::string_view sv) { content_ += sv; }
   std::string const& get() const { return content_; }
   void               start() { content_.clear(); }
+
+  // region id
+  void set_current_reg_id(std::string const& name) { region_type_ = name; }
 
   // stream
   int read(char* buffer, int siz);
@@ -145,6 +149,7 @@ private:
   std::shared_ptr<std::istream> current_file_;
   std::string                   content_;
   std::string                   source_name_;
+  std::string                   region_type_;
   location_type                 loc_;
   option_flags                  flags_ = 0;
   std::int32_t                  skip_  = 0;

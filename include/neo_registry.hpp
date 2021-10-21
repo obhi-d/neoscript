@@ -27,19 +27,29 @@ struct command_handler
 {
 };
 
+//
+// @remarks Command hook that is executed at the start of the command,
+// parameters are stored inside command
 using command_hook = neo::retcode (*)(command_handler* obj,
                                       neo::state_machine const&,
                                       neo::command const&);
+//
+// @remarks Command hook that is executed at the end of the command
 using command_end_hook =
     void (*)(command_handler* obj, neo::state_machine const&,
              std::string_view cmd_name); // scope_name is "" at end of scope
 
-using textreg_hook = void (*)(command_handler* obj, neo::state_machine const&,
+/// 
+/// @remarks Text region hook/callback for regions marked as {{text_type:SegmentName}}
+/// @param obj       Command handler interface
+/// @param sm        State machine that holds the parser state
+/// @param text_type This corresponds to the text just before ':' in the region which is 'text_type' in the above example
+/// @param name      This corresponds to the text just after ':' in the region which is 'SegmentName' in the above example
+/// @param content   The text content in the region
+using textreg_hook = void (*)(command_handler* obj, neo::state_machine const& sm,
+                              std::string&& text_type,
                               std::string&& name, std::string&& content);
 
-using region_hook = neo::retcode (*)(command_handler* obj,
-                                     neo::state_machine const&,
-                                     std::string_view);
 
 using command_id  = std::uint32_t;
 using registry_id = std::uint32_t;

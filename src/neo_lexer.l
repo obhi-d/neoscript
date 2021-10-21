@@ -107,7 +107,10 @@ BLANK   [ \t]
 				if (_.get() == "code")
 					BEGIN(STATE_REGION_CODE); 
 				else 
+				{
 					BEGIN(STATE_REGION_TEXT);
+					_.set_current_reg_id(_.get());
+			  }
 				_.start();
 			}
 }

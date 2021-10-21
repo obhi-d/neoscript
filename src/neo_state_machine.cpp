@@ -152,7 +152,9 @@ void state_machine::end_block()
 void state_machine::start_region(std::string&& region_id, std::string&& content)
 {
   neo::detail::interpreter::handle_text_region(
-      registry_, cmd_handler_, *this, std::move(region_id), std::move(content));
+      registry_, cmd_handler_, *this, std::move(region_type_),
+      std::move(region_id),
+      std::move(content));
 }
 void state_machine::import_script(std::string const& file_id)
 {
