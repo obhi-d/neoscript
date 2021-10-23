@@ -90,7 +90,7 @@ public:
       return (*it).second;
     auto id = static_cast<std::uint32_t>(blocks_.size());
     reg_block_mappings_.emplace(name, id);
-    blocks_.resize(id + 1);
+    blocks_.resize(static_cast<std::size_t>(id + 1));
     return id;
   } /// region type to block mapping
 

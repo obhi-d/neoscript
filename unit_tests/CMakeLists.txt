@@ -1,5 +1,4 @@
 
-project(cpphash_general_tests)
   
 include(ExternalProject)
 

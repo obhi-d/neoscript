@@ -225,7 +225,7 @@ public:
     return *this;
   }
 
-  inline command& operator=(command&& _)
+  inline command& operator=(command&& _) noexcept
   {
     name_   = std::move(_.name_);
     params_ = std::move(_.params_);

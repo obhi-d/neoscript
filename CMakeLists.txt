@@ -92,7 +92,8 @@ if(BUILD_TESTING AND NEOSCRIPT_BUILD_TESTS)
     add_subdirectory(unit_tests)
 endif()
 
-
+# Utility
+add_subdirectory(utility)
 # INSTALL
 
 install(TARGETS ${PROJECT_NAME}

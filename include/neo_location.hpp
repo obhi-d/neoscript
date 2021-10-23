@@ -9,8 +9,8 @@ namespace neo
 
 struct NEO_API position
 {
-  std::uint32_t line      = 0;
-  std::uint32_t character = 0;
+  std::uint32_t line      = 1;
+  std::uint32_t character = 1;
   friend bool   operator==(position const& first, position const& second)
   {
     return first.line == second.line && first.character == second.character;
