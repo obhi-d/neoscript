@@ -7,7 +7,7 @@ option(NEOSCRIPT_BUILD_TESTS      "Build the unit tests when BUILD_TESTING is en
 option(NEOSCRIPT_BUILD_STATIC     "Build as static lib."                                ON)
 option(NEOSCRIPT_USE_LIBCPP_CLANG "Use libc++ for clang"                                ON)
 set   (NEOSCRIPT_BISON            "bison"                                               CACHE STRING "Bison execuatable")
-set   (NESCRIPT_FLEX              "flex"                                                CACHE STRING "Flex executable"  )
+set   (NEOSCRIPT_FLEX              "flex"                                                CACHE STRING "Flex executable"  )
 
 ##
 ## CONFIGURATION
@@ -25,7 +25,7 @@ add_custom_command(
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp" 
-	 COMMAND ${NESCRIPT_FLEX} -o ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
+	 COMMAND ${NEOSCRIPT_FLEX} -o ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
 		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp"
