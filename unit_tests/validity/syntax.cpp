@@ -83,7 +83,7 @@ struct test_command_handler : public neo::command_handler
                      val))
         break;
     }
-    this->output = output;
+    this->output += output;
     return neo::retcode::e_success;
   }
 
@@ -118,7 +118,7 @@ TEST_CASE("Scoped command", "[region0]")
   REQUIRE(handler.output == "echo --> (Hello world)\n");
 }
 
-TEST_CASE("Text region", "[region1]")
+TEST_CASE("Text region", "[textregion1]")
 {
   neo::registry test_interpreter;
   std::string   test = "{{text:History}}\n"
@@ -154,9 +154,57 @@ TEST_CASE("Text region", "[region1]")
   REQUIRE(handler.output == "\nThe world began when we perished.\n"
                             "But we left our mark to be found again.\n"
                             "In the future, we lived again in memories.\n"
-                            "Of time\n"
+                            "Of time{\n"
                             "{{unknown}}\n");
 }
+
+TEST_CASE("Text region 2", "[textregion2]")
+{
+  neo::registry test_interpreter;
+  std::string   test =
+      "{{text:textreg}}\n"
+      "The world began when we perished.\n"
+      "\\a/a\\a/t\\t\\.a.\n"
+      "\@.\n"
+      "{\n"
+      " bracket should appear correctly.\n"
+      "}\n"
+      "{{text:secondregion}}\n"
+      "This region {secondregion} follows the previous \\{textreg}\n"
+      "{{code:Print}}\n"
+      "print (region = \"textreg\"); \n"
+      "print (region = \"secondregion\"); \n";
+  std::shared_ptr<std::istream> iss =
+      std::make_shared<std::istringstream>(test);
+
+  auto root = test_interpreter.ensure_region_root("Print");
+  test_interpreter.add_command(
+      root, "print",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) -> neo::retcode {
+        return static_cast<test_command_handler*>(_)->print_region(ctx, cmd);
+      });
+  test_interpreter.set_text_region_handler(
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         std::string&& id, std::string&& name, std::string&& content)
+      {
+        return static_cast<test_command_handler*>(_)->add_text(
+            ctx, std::move(name), std::move(content));
+      });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", iss);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output ==
+          "\nThe world began when we perished.\n"
+          "\\a/a\\a/t\\t\\.a.\n"
+          "\@.\n"
+          "{\n"
+          " bracket should appear correctly.\n"
+          "}\n\n"
+          "This region {secondregion} follows the previous \\{textreg}\n");
+}
+
 
 TEST_CASE("Any command", "[region2]")
 {

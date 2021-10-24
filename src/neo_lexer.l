@@ -32,8 +32,7 @@ BLANK   [ \t]
 
 <STATE_TEXT>{
 
-\\\[ 		 	_.put('[');
-\\\{ 		 	_.put('{');
+\\\{\\\{ 		 	_.put("{{");
 ^\{\{        {
 	BEGIN(STATE_REGION); 
 	std::string content = _.get(); 
@@ -41,12 +40,13 @@ BLANK   [ \t]
 	return neo::parser_impl::make_TEXT_CONTENTS(content, _.loc()); 
 }
 
-[^\\\[\n\{]+       _.put(yytext);
-\\[^\[\{]+			 _.put(yytext);
-
 <<EOF>>  {
 	BEGIN(INITIAL); 
 	return neo::parser_impl::make_TEXT_CONTENTS(_.get(), _.loc()); 
+}
+
+.		{ 
+		_.put(yytext);
 }
 
 }
