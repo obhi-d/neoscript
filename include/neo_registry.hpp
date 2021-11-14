@@ -32,24 +32,27 @@ struct command_handler
 // parameters are stored inside command
 using command_hook = neo::retcode (*)(command_handler* obj,
                                       neo::state_machine const&,
-                                      neo::command const&);
+                                      neo::command const&) noexcept;
 //
 // @remarks Command hook that is executed at the end of the command
-using command_end_hook =
-    void (*)(command_handler* obj, neo::state_machine const&,
-             std::string_view cmd_name); // scope_name is "" at end of scope
+using command_end_hook = void (*)(
+    command_handler* obj, neo::state_machine const&,
+    std::string_view cmd_name) noexcept; // scope_name is "" at end of scope
 
-/// 
-/// @remarks Text region hook/callback for regions marked as {{text_type:SegmentName}}
+///
+/// @remarks Text region hook/callback for regions marked as
+/// {{text_type:SegmentName}}
 /// @param obj       Command handler interface
 /// @param sm        State machine that holds the parser state
-/// @param text_type This corresponds to the text just before ':' in the region which is 'text_type' in the above example
-/// @param name      This corresponds to the text just after ':' in the region which is 'SegmentName' in the above example
+/// @param text_type This corresponds to the text just before ':' in the region
+/// which is 'text_type' in the above example
+/// @param name      This corresponds to the text just after ':' in the region
+/// which is 'SegmentName' in the above example
 /// @param content   The text content in the region
-using textreg_hook = void (*)(command_handler* obj, neo::state_machine const& sm,
-                              std::string&& text_type,
-                              std::string&& name, std::string&& content);
-
+using textreg_hook = void (*)(command_handler*          obj,
+                              neo::state_machine const& sm,
+                              std::string_view text_type, std::string_view name,
+                              text_content&& content) noexcept;
 
 using command_id  = std::uint32_t;
 using registry_id = std::uint32_t;
@@ -61,8 +64,9 @@ class registry
   {
     command_hook  cbk_          = nullptr;
     std::uint32_t sub_handlers_ = 0xffffffff;
-    handler()                   = default;
-    handler(command_hook cbk, std::uint32_t sub)
+    handler() noexcept          = default;
+    handler(command_hook cbk, std::uint32_t sub) noexcept
+
         : cbk_(std::move(cbk)), sub_handlers_(sub)
     {}
   };
@@ -77,13 +81,15 @@ class registry
 public:
   static constexpr std::uint32_t k_invalid_id = 0xffffffff;
 
-  registry()
+  registry() noexcept
+
   {
     reg_block_mappings_[""] = 0;
     blocks_.emplace_back();
   }
 
-  inline std::uint32_t ensure_region_root(std::string_view name)
+  inline std::uint32_t ensure_region_root(std::string_view name) noexcept
+
   {
     auto it = reg_block_mappings_.find(name);
     if (it != reg_block_mappings_.end())
@@ -96,17 +102,19 @@ public:
 
   /// A non scoped command registration
   inline command_id add_command(command_id parent_scope, std::string_view cmd,
-                                command_hook callback = nullptr)
+                                command_hook callback = nullptr) noexcept
+
   {
     return internal_add_command(
         parent_scope, cmd, static_cast<command_hook>(callback), false, nullptr);
   }
 
   /// A scoped command registration
-  inline command_id add_scoped_command(command_id       parent_scope,
-                                       std::string_view cmd,
-                                       command_hook     callback  = nullptr,
-                                       command_end_hook block_end = nullptr)
+  inline command_id add_scoped_command(
+      command_id parent_scope, std::string_view cmd,
+      command_hook     callback  = nullptr,
+      command_end_hook block_end = nullptr) noexcept
+
   {
     return internal_add_command(parent_scope, cmd,
                                 static_cast<command_hook>(callback), true,
@@ -125,7 +133,8 @@ public:
   /// @code alias_command("@/echo", "@second_reg/upper/echo");
   /// @code alias_command("@first_reg/echo", "@second_reg/upper/echo");
   inline void alias_command(std::string_view src_path,
-                            std::string_view dst_path)
+                            std::string_view dst_path) noexcept
+
   {
     std::uint32_t par_block = find_parent_block(src_path);
     if (par_block == k_invalid_id)
@@ -134,12 +143,14 @@ public:
     blocks_[dst_block].events_[dst_path] = blocks_[par_block].events_[src_path];
   }
 
-  inline void set_text_region_handler(textreg_hook handler)
+  inline void set_text_region_handler(textreg_hook handler) noexcept
+
   {
     text_reg_handler_ = handler;
   }
 
-  inline std::uint32_t get_region_root(std::string_view name) const
+  inline std::uint32_t get_region_root(std::string_view name) const noexcept
+
   {
     auto it = reg_block_mappings_.find(name);
     if (it != reg_block_mappings_.end())
@@ -150,11 +161,11 @@ public:
 private:
   /// All sub-commands must be registred right after
   /// a parent command is registered
-  inline command_id internal_add_command(command_id       parent_scope,
-                                         std::string_view cmd,
-                                         command_hook     callback  = nullptr,
-                                         bool             is_scoped = false,
-                                         command_end_hook end       = nullptr)
+  inline command_id internal_add_command(
+      command_id parent_scope, std::string_view cmd,
+      command_hook callback = nullptr, bool is_scoped = false,
+      command_end_hook end = nullptr) noexcept
+
   {
     assert(parent_scope < blocks_.size());
     std::uint32_t id = 0xffffffff;
@@ -179,7 +190,9 @@ private:
     return id;
   }
 
-  inline std::uint32_t find_parent_block(std::string_view& src_path) const
+  inline std::uint32_t find_parent_block(
+      std::string_view& src_path) const noexcept
+
   {
     std::string_view src_reg = "";
     if (src_path[0] == '@')
@@ -206,7 +219,8 @@ private:
     return root;
   }
 
-  inline std::uint32_t build_parent_block(std::string_view& src_path)
+  inline std::uint32_t build_parent_block(std::string_view& src_path) noexcept
+
   {
     std::string_view src_reg = "";
     if (src_path[0] == '@')

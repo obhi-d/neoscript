@@ -14,7 +14,8 @@ public:
 
   static inline void end_scope(neo::registry const& reg,
                                neo::state_machine& ctx, command_handler* obj,
-                               std::uint32_t block, std::string_view scope_id)
+                               std::uint32_t    block,
+                               std::string_view scope_id) noexcept 
   {
     if (reg.blocks_[block].end_)
       std::invoke(reg.blocks_[block].end_, obj, ctx, scope_id);
@@ -22,7 +23,7 @@ public:
 
   static inline std::tuple<std::uint32_t, neo::retcode> execute(
       neo::registry const& reg, neo::state_machine& ctx, command_handler* obj,
-      std::uint32_t block, neo::command& cmd)
+      std::uint32_t block, neo::command& cmd) noexcept 
   {
     auto&         block_ref = reg.blocks_[block];
     auto          it        = block_ref.events_.find(cmd.name());
@@ -51,13 +52,13 @@ public:
   static inline void handle_text_region(neo::registry const&      reg,
                                         neo::command_handler*     obj,
                                         neo::state_machine const& ctx,
-                                        std::string&&             region_type,
-                                        std::string&&             region_id,
-                                        std::string&&             content)
+                                        std::string_view             region_type,
+                                        std::string_view          region_id,
+                                        text_content&& content) noexcept 
   {
     if (reg.text_reg_handler_)
-      reg.text_reg_handler_(obj, ctx, std::move(region_type),
-                            std::move(region_id), std::move(content));
+      reg.text_reg_handler_(obj, ctx, region_type,
+                            region_id, std::move(content));
   }
 
 private:

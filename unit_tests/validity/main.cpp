@@ -25,7 +25,7 @@ struct fileout_command_handler : public neo::command_handler
 
   static neo::retcode print_enter_scope(neo::command_handler*     _,
                                         neo::state_machine const& ctx,
-                                        neo::command const&       cmd)
+                                        neo::command const&       cmd) noexcept
   {
     auto result = static_cast<fileout_command_handler*>(_)->print_m(ctx, cmd);
     if (result == neo::retcode::e_success && cmd.is_scoped())
@@ -36,7 +36,8 @@ struct fileout_command_handler : public neo::command_handler
   }
 
   static void leave_scope(neo::command_handler*     _,
-                          neo::state_machine const& ctx, std::string_view name)
+                          neo::state_machine const& ctx,
+                          std::string_view          name) noexcept
   {
     static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
   }
@@ -98,6 +99,17 @@ std::tuple<std::string, std::string> compare_expected(std::string const& name)
   return {f1_str, f2_str};
 }
 
+std::string read_file(std::filesystem::path path)
+{
+  std::ifstream t{path};
+  t.seekg(0, std::ios::end);
+  size_t      size = t.tellg();
+  std::string buffer(size, '\0');
+  t.seekg(0);
+  t.read(&buffer[0], size);
+  return buffer;
+}
+
 TEST_CASE("Validate syntax files", "[file]")
 {
   namespace fs = std::filesystem;
@@ -108,6 +120,7 @@ TEST_CASE("Validate syntax files", "[file]")
       root, "*", &fileout_command_handler::print_enter_scope,
       &fileout_command_handler::leave_scope);
 
+  std::unordered_map<std::string_view, std::string> sources;
   for (auto& p : fs::directory_iterator("../dataset"))
   {
     auto path = p.path();
@@ -115,10 +128,17 @@ TEST_CASE("Validate syntax files", "[file]")
       fileout_command_handler handler(path.filename().generic_string());
       neo::state_machine      state_machine(test_interpreter, &handler, 0);
       state_machine.set_import_handler(
-          [](std::string const& name)
-          { return std::make_shared<std::ifstream>("../dataset/" + name); });
-      std::shared_ptr<std::istream> iss = std::make_shared<std::ifstream>(path);
-      state_machine.parse(path.filename().generic_string(), iss);
+          [&sources](std::string_view name) noexcept -> std::string_view
+          {
+            std::string base{"../dataset/"};
+            base += name;
+            std::filesystem::path p{base};
+            auto                  buffer = read_file(p);
+            auto                  r = sources.emplace(name, std::move(buffer));
+            return r.first->second;
+          });
+      auto buffer = read_file(path);
+      state_machine.parse(path.filename().generic_string(), buffer);
       if (state_machine.fail_bit())
       {
         std::cerr << "[ERROR] Compiling file "

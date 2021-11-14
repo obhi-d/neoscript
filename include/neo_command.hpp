@@ -24,55 +24,60 @@ public:
   class NEO_API single
   {
   public:
-    inline single() = default;
-    inline single(single const& _) : name_(_.name_), value_(_.value_) {}
-    inline single(single&&) = default;
+    inline single() noexcept = default;
+    inline single(single const& _) noexcept : name_(_.name_), value_(_.value_)
+    {}
+    inline single(single&&) noexcept = default;
 
-    inline single(std::string_view value) : value_(value) {}
-    inline single(std::string const& value) : value_(value) {}
-    inline single(std::string&& value) : value_(std::move(value)) {}
-    inline single(std::string const& name, std::string const& value)
+    inline single(std::string_view value) noexcept : value_(value) {}
+    inline single(std::string_view name, std::string_view value) noexcept
         : name_(name), value_(value)
     {}
-    inline single(std::string&& name, std::string&& value)
-        : name_(std::move(name)), value_(std::move(value))
-    {}
 
-    inline single& operator=(single const& _)
+    inline single& operator=(single const& _) noexcept
     {
       name_  = _.name_;
       value_ = _.value_;
       return *this;
     }
-    inline single& operator=(single&&) = default;
+    inline single& operator=(single&&) noexcept = default;
 
-    inline void set_name(std::string&& name) { name_ = std::move(name); }
-    inline void set_value(std::string&& value) { value_ = std::move(value); }
+    inline void set_name(std::string_view name) noexcept
+    {
+      name_ = std::move(name);
+    }
+    inline void set_value(std::string_view value) noexcept
+    {
+      value_ = std::move(value);
+    }
 
-    inline std::string const& name() const noexcept { return name_; }
-    inline std::string const& value() const noexcept { return value_; }
+    inline std::string_view name() const noexcept { return name_; }
+    inline std::string_view value() const noexcept { return value_; }
     // Return either name or value iff name is empty.
-    inline std::string const& nonempty() const noexcept { return name_.empty() ? value_ : name_; }
+    inline std::string_view nonempty() const noexcept
+    {
+      return name_.empty() ? value_ : name_;
+    }
 
   private:
-    std::string name_;
-    std::string value_;
+    std::string_view name_;
+    std::string_view value_;
   };
 
   class NEO_API list
   {
   public:
-    inline list() = default;
-    inline list(list const& _) : value_(_.value_), name_(_.name_) {}
-    inline list(list&&) = default;
+    inline list() noexcept = default;
+    inline list(list const& _) noexcept : value_(_.value_), name_(_.name_) {}
+    inline list(list&&) noexcept = default;
 
-    inline list& operator=(list const& _)
+    inline list& operator=(list const& _) noexcept
     {
       value_ = _.value_;
       name_  = _.name_;
       return *this;
     }
-    inline list& operator=(list&&) = default;
+    inline list& operator=(list&&) noexcept = default;
 
     using node           = std::variant<std::monostate, single, list>;
     using vector         = std::vector<node>;
@@ -84,12 +89,12 @@ public:
     inline iterator       end() noexcept { return value_.end(); }
     inline const_iterator end() const noexcept { return value_.end(); }
 
-    inline void set_name(std::string&& name) noexcept
+    inline void set_name(std::string_view name) noexcept
     {
       name_ = std::move(name);
     }
 
-    inline void set_value(std::string&&) noexcept {}
+    inline void set_value(std::string_view) noexcept {}
 
     inline void emplace_back(node&& i_param) noexcept
     {
@@ -99,21 +104,21 @@ public:
     inline std::size_t size() const noexcept { return value_.size(); }
     inline std::size_t count() const noexcept { return value_.size(); }
     inline node const& at(std::uint32_t i) const noexcept { return value_[i]; }
-    inline std::string const& name() const { return name_; }
+    inline std::string_view name() const noexcept { return name_; }
 
-    inline list::vector&       value() { return value_; }
-    inline list::vector const& value() const { return value_; }
+    inline list::vector&       value() noexcept { return value_; }
+    inline list::vector const& value() const noexcept { return value_; }
 
   private:
-    vector      value_;
-    std::string name_;
+    vector           value_;
+    std::string_view name_;
   };
 
   using param_t = list::node;
 
-  inline static std::string const& as_string(
-      param_t const& source, std::string const& default_val = "",
-      std::uint32_t pref_index = 0)
+  inline static std::string_view const& as_string(
+      param_t const& source, std::string_view default_val = "",
+      std::uint32_t pref_index = 0) noexcept
   {
     param_t const* p_source = &source;
     while (true)
@@ -144,7 +149,7 @@ public:
     resolver* next_ = nullptr;
   };
 
-  inline static void resolve(resolver const* stack, list::vector& vec)
+  inline static void resolve(resolver const* stack, list::vector& vec) noexcept
   {
     for (auto& e : vec)
       std::visit(overloaded{[](std::monostate&) {},
@@ -167,16 +172,16 @@ public:
 
   struct NEO_API parameters
   {
-    inline parameters() = default;
-    inline parameters(parameters const& _) : value_(_.value_) {}
-    inline parameters(parameters&&) = default;
+    inline parameters() noexcept = default;
+    inline parameters(parameters const& _) noexcept : value_(_.value_) {}
+    inline parameters(parameters&&) noexcept = default;
 
-    inline parameters& operator=(parameters const& _)
+    inline parameters& operator=(parameters const& _) noexcept
     {
       value_ = _.value_;
       return *this;
     }
-    inline parameters& operator=(parameters&&) = default;
+    inline parameters& operator=(parameters&&) noexcept = default;
 
     inline void append(param_t&& i_param) noexcept
     {
@@ -197,10 +202,10 @@ public:
     {
       command::resolve(stack, value_);
     }
-    inline static void set_name(param_t& _, std::string&& name) noexcept
+    inline static void set_name(param_t& _, std::string_view name) noexcept
     {
-      std::visit(overloaded{[](std::monostate& s) {}, [&name](auto& other)
-                            { other.set_name(std::move(name)); }},
+      std::visit(overloaded{[](std::monostate& s) {},
+                            [name](auto& other) { other.set_name(name); }},
                  _);
     }
 
@@ -215,7 +220,8 @@ public:
       : name_(_.name_), params_(_.params_), scoped_(_.scoped_)
   {}
   inline command(command&&) noexcept = default;
-  inline command(std::string&& name, parameters&& params, bool scoped) noexcept
+  inline command(std::string_view name, parameters&& params,
+                 bool scoped) noexcept
       : name_(std::move(name)), params_(std::move(params)), scoped_(scoped)
   {}
 
@@ -235,19 +241,22 @@ public:
     return *this;
   }
 
-  inline std::string_view  name() const { return name_; }
-  inline parameters const& params() const { return params_; }
-  inline parameters&       params() { return params_; }
+  inline std::string_view  name() const noexcept { return name_; }
+  inline parameters const& params() const noexcept { return params_; }
+  inline parameters&       params() noexcept { return params_; }
 
-  inline operator bool() const { return name_.length() > 0; }
+  inline operator bool() const noexcept { return name_.length() > 0; }
 
-  inline bool is_scoped() const { return scoped_; }
-  inline void resolve(resolver const* stack) { params_.resolve(stack); }
+  inline bool is_scoped() const noexcept { return scoped_; }
+  inline void resolve(resolver const* stack) noexcept
+  {
+    params_.resolve(stack);
+  }
 
 private:
-  std::string name_;
-  parameters  params_;
-  bool        scoped_ = false;
+  std::string_view name_;
+  parameters       params_;
+  bool             scoped_ = false;
 };
 
 using resolver = neo::command::resolver;

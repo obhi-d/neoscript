@@ -61,17 +61,18 @@ YY_DECL;
 	IMPORT	   "import"
 	;
 
-%token <std::string> REGION_ID TEXT_REGION_ID TEXT_CONTENTS IDENTIFIER STRING_LITERAL
+%token <std::string_view> REGION_ID TEXT_REGION_ID IDENTIFIER STRING_LITERAL
+%token <neo::text_content> TEXT_CONTENTS 
 
 // Types
-%type <std::string> commandname
+%type <std::string_view> commandname
 %type <command> commanddecl
 %type <command_instance> instancedecl
 %type <command::parameters> parameters.0.N 
 %type <command::param_t> special_parameter special_parameters.0.N  parameter list.0.N any_parameter
-%type <std::vector<std::string>> template_args.0.N
+%type <std::vector<std::string_view>> template_args.0.N
 %type <command_template> templatedecl
-%printer { yyoutput << $$; } <std::string>
+%printer { yyoutput << $$; } <std::string_view>
 
 %start script
 
@@ -95,7 +96,7 @@ template_args.0.N:	/* empty string */
 					| IDENTIFIER	{ 
 						if (!_.skip())
 						{
-							std::vector<std::string> args; 
+							std::vector<std::string_view> args; 
 							args.push_back($1); 
 							$$ = std::move(args); 
 						}
@@ -215,20 +216,27 @@ namespace neo
 {
 
 void parser_impl::error(location_type const& l,
-												std::string const & e) 
+												std::string const & e)
 {
   _.push_error(l, e.c_str());
 }
 
-void state_machine::parse(std::string_view src_name, std::shared_ptr<std::istream> const& ifile) 
+void state_machine::parse(std::string_view src_name, std::string_view content) noexcept
 {
 	auto restore_file = current_file_;
-	current_file_ = ifile;
 	auto restore_source_name = source_name_;
+	auto restore_pos = pos_;
+	auto restore_pos_commit = pos_commit_;
+	auto restore_len_reading = len_reading_;
+
+	pos_ = 0;
+	pos_commit_ = 0;
+	len_reading_ = 0;
+	current_file_ = content;
 	source_name_ = src_name;
 	auto restore_loc = loc_;
 	loc_ = location_type();
-	loc_.source_name = &source_name_;
+	loc_.source_name = source_name_;
 	void* restore_scanner = scanner;
 	scanner = nullptr;
 	start_region("");
@@ -237,8 +245,13 @@ void state_machine::parse(std::string_view src_name, std::shared_ptr<std::istrea
 	parser.set_debug_level(flags_ & f_trace_parse);
 	int res = parser.parse();
 	end_scan();
+	
 	current_file_ = restore_file;
 	source_name_ = restore_source_name;
+	pos_ = restore_pos;
+	pos_commit_ = restore_pos_commit;
+	len_reading_ = restore_len_reading;
+
 	loc_ = restore_loc;
 	scanner = restore_scanner;
 }

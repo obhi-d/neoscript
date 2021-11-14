@@ -12,12 +12,15 @@ namespace neo
 
 const command_template state_machine::null_template_;
 state_machine::state_machine(registry const& reg, command_handler* handler,
-                             state_machine::option_flags flags)
-    : flags_(flags), importer_(&state_machine::default_import_handler),
+                             state_machine::option_flags flags) noexcept
+    : flags_(flags), 
       registry_(reg), cmd_handler_(handler)
-{}
+{
+  importer_ = [this](std::string_view src)
+  { return default_import_handler(src); };
+}
 
-void state_machine::start_region(std::string&& region)
+void state_machine::start_region(std::string_view region) noexcept
 {
   if (block_stack_.size() > 1 || skip_ > 0)
   {
@@ -30,7 +33,7 @@ void state_machine::start_region(std::string&& region)
   block_stack_.push_back(block);
   this->region_ = std::move(region);
 }
-bool state_machine::consume(neo::command&& cmd)
+bool state_machine::consume(neo::command&& cmd) noexcept
 {
   if (record_stack_.size() > 0)
   {
@@ -68,12 +71,12 @@ bool state_machine::consume(neo::command&& cmd)
   }
   return true;
 }
-void state_machine::add_template(neo::command_template&& cmd_templ)
+void state_machine::add_template(neo::command_template&& cmd_templ) noexcept
 {
   root_template_storage_.emplace_front(std::move(cmd_templ));
   record_template(root_template_storage_.front());
 }
-void state_machine::record_template(neo::command_template& cmd_templ)
+void state_machine::record_template(neo::command_template& cmd_templ) noexcept
 {
   if (record_stack_.size() == 0)
   {
@@ -95,11 +98,12 @@ void state_machine::record_template(neo::command_template& cmd_templ)
       record_stack_.push_back(&cmd_templ.main_);
   }
 }
-void state_machine::push_template(neo::command_template const& cmd_templ)
+void state_machine::push_template(
+    neo::command_template const& cmd_templ) noexcept
 {
   templates_[cmd_templ.name()].emplace_back(std::cref(cmd_templ));
 }
-void state_machine::remove_template(std::string const& name)
+void state_machine::remove_template(std::string_view name) noexcept
 {
   auto it = templates_.find(name);
   if (it != templates_.end())
@@ -107,7 +111,7 @@ void state_machine::remove_template(std::string const& name)
     it->second.pop_back();
   }
 }
-bool state_machine::consume(neo::command_instance&& cmd_inst)
+bool state_machine::consume(neo::command_instance&& cmd_inst) noexcept
 {
   if (record_stack_.size() > 0)
   {
@@ -131,7 +135,7 @@ bool state_machine::consume(neo::command_instance&& cmd_inst)
   }
   return true;
 }
-void state_machine::end_block()
+void state_machine::end_block() noexcept
 {
   if (record_stack_.size() > 0)
   {
@@ -149,63 +153,91 @@ void state_machine::end_block()
     }
   }
 }
-void state_machine::start_region(std::string&& region_id, std::string&& content)
+void state_machine::start_region(std::string_view region_id,
+                                 text_content&& content) noexcept
 {
   neo::detail::interpreter::handle_text_region(
-      registry_, cmd_handler_, *this, std::move(region_type_),
-      std::move(region_id),
+      registry_, cmd_handler_, *this, region_type_,
+      region_id,
       std::move(content));
 }
-void state_machine::import_script(std::string const& file_id)
+void state_machine::import_script(std::string_view file_id) noexcept
 {
   auto file = importer_(file_id);
   parse(file_id, file);
 }
-void state_machine::error(location_type const&, std::string const&) {}
+void state_machine::error(location_type const&, std::string const&) noexcept {}
 neo::command_template state_machine::make_command_template(
-    std::vector<std::string>&& params, neo::command&& cmd)
+    std::vector<std::string_view>&& params, neo::command&& cmd) noexcept
 {
-  std::string name(cmd.name());
-  return neo::command_template(std::move(name), std::move(params),
+  return neo::command_template(cmd.name(), std::move(params),
                                std::move(cmd));
 }
 
 neo::command_template state_machine::make_command_template(
-    std::string&& name, std::vector<std::string>&& params, neo::command&& cmd)
+    std::string_view name, std::vector<std::string_view>&& params,
+    neo::command&& cmd) noexcept
 {
   return neo::command_template(std::move(name), std::move(params),
                                std::move(cmd));
 }
-neo::command state_machine::make_command(std::string&&              name,
+neo::command state_machine::make_command(std::string_view              name,
                                          neo::command::parameters&& params,
-                                         bool scope_trigger)
+                                         bool scope_trigger) noexcept
 {
   return neo::command(std::move(name), std::move(params), scope_trigger);
 }
 neo::command_instance state_machine::make_instance(
-    std::string&& name, neo::command::param_t&& param, bool scope_trigger)
+    std::string_view name, neo::command::param_t&& param,
+    bool scope_trigger) noexcept
 {
   return neo::command_instance(std::move(name), std::move(param),
                                scope_trigger);
 }
-void state_machine::push_error(location const& l, std::string_view e)
+void state_machine::push_error(location const& l, std::string_view e) noexcept
 {
   std::string loc = l;
   loc += e;
   errors_.emplace_back(std::move(loc));
 }
 
-void state_machine::resolve(neo::command& cmd) { cmd.resolve(resolver_stack_); }
-int  state_machine::read(char* buffer, int size)
+void state_machine::resolve(neo::command& cmd) noexcept
 {
-  current_file_->read(buffer, static_cast<std::streamsize>(size - 1));
-  int read     = static_cast<int>(current_file_->gcount());
-  buffer[read] = 0;
-  return read;
+  cmd.resolve(resolver_stack_);
 }
-std::shared_ptr<std::istream> neo::state_machine::default_import_handler(
-    std::string const& file)
+int state_machine::read(char* data, int size) noexcept
 {
-  return std::make_shared<std::ifstream>(file);
+  auto min = std::min<std::int32_t>(
+      static_cast<std::int32_t>(current_file_.size() - pos_), size);
+  if (min)
+  {
+    std::memcpy(data, current_file_.data() + pos_,
+                static_cast<std::size_t>(min));
+    pos_ += min;
+    if (min < size)
+      data[min] = 0;
+    
+    assert(min <= size);
+    return min;
+  }
+  data[0] = 0;
+  return 0;
+}
+std::string_view neo::state_machine::default_import_handler(
+    std::string_view file) noexcept
+{
+  auto it = imported_.find(file);
+  if (it != imported_.end())
+  {
+    return std::string_view(it->second);
+  }
+  std::ifstream t{std::string(file)};
+  t.seekg(0, std::ios::end);
+  size_t      size = t.tellg();
+  std::string buffer(size, '\0');
+  t.seekg(0);
+  t.read(&buffer[0], size); 
+  auto r = imported_.emplace(file, std::move(buffer));
+  return r.first->second;
 }
 } // namespace neo

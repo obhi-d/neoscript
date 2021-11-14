@@ -4,7 +4,7 @@
 
 namespace neo
 {
-bool command_template::record::pre_visit(neo::state_machine& ctx) const
+bool command_template::record::pre_visit(neo::state_machine& ctx) const noexcept
 {
   if (ctx.fail_bit())
     return true;
@@ -26,7 +26,7 @@ bool command_template::record::pre_visit(neo::state_machine& ctx) const
                                }},
                     node_);
 }
-bool command_template::record::visit(neo::state_machine& ctx) const
+bool command_template::record::visit(neo::state_machine& ctx) const noexcept
 {
   bool result = true;
   if (sub_.size() > 0)
@@ -46,7 +46,8 @@ bool command_template::record::visit(neo::state_machine& ctx) const
   }
   return result;
 }
-void command_template::record::post_visit(neo::state_machine& ctx) const
+void command_template::record::post_visit(
+    neo::state_machine& ctx) const noexcept
 {
   std::visit(overloaded{[&ctx](auto const& oth) {},
                         [&ctx](command_template_ref const& rec)
@@ -55,7 +56,8 @@ void command_template::record::post_visit(neo::state_machine& ctx) const
                         [&ctx](instance_record const& rec) {}},
              node_);
 }
-bool command_template::visit(neo::state_machine& ctx, bool extend) const
+bool command_template::visit(neo::state_machine& ctx,
+                             bool                extend) const noexcept
 {
   assert(main_.node_.index() == 2);
   template_record const& rec    = std::get<template_record>(main_.node_);
