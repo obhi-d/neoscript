@@ -51,6 +51,8 @@ public:
 
     inline std::string const& name() const noexcept { return name_; }
     inline std::string const& value() const noexcept { return value_; }
+    // Return either name or value iff name is empty.
+    inline std::string const& nonempty() const noexcept { return name_.empty() ? value_ : name_; }
 
   private:
     std::string name_;

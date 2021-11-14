@@ -68,7 +68,7 @@ YY_DECL;
 %type <command> commanddecl
 %type <command_instance> instancedecl
 %type <command::parameters> parameters.0.N 
-%type <command::param_t> special_parameter special_parameters.0.N  parameter list.0.N list
+%type <command::param_t> special_parameter special_parameters.0.N  parameter list.0.N any_parameter
 %type <std::vector<std::string>> template_args.0.N
 %type <command_template> templatedecl
 %printer { yyoutput << $$; } <std::string>
@@ -132,11 +132,13 @@ commanddecl:
 instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
 		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
 
-parameters.0.N:   /* empty string */                    
-				  | parameters.0.N parameter  { if (!_.skip()) { $1.append(std::move($2)); $$ = std::move($1); } }
-				  | parameters.0.N LBRACES special_parameters.0.N RBRACES { 
-							if (!_.skip()) { $1.append_expanded(std::move($3)); $$ = std::move($1);  }
+parameters.0.N:   /* empty string */      
+				  | parameter	{ if (!_.skip()) $$.append(std::move($1)); }
+				  | LBRACES list.0.N RBRACES { 
+							if (!_.skip()) { $$.append_expanded(std::move($2)); }
 						}
+				  | parameters.0.N parameter  { if (!_.skip()) { $1.append(std::move($2)); $$ = std::move($1); } }
+				  | parameters.0.N LBRACES list.0.N RBRACES { if (!_.skip()) { $1.append_expanded(std::move($3)); $$ = std::move($1); } }
 				  ;
 
 special_parameters.0.N:     /* empty string */       
@@ -179,12 +181,12 @@ parameter: STRING_LITERAL						      { if (!_.skip()) $$ = command::single(std::
 			| LSQBRACKET list.0.N RSQBRACKET    { if (!_.skip()) $$ = std::move($2); }
 			;
 			
-list: parameter					  { if (!_.skip()) $$ = std::move($1); }
+any_parameter: parameter					  { if (!_.skip()) $$ = std::move($1); }
 	| special_parameter			{ if (!_.skip()) $$ = std::move($1); }
     ;
 	
 list.0.N:	/* empty string */							
-		|  list                         { 
+		|  any_parameter                         { 
 			if (!_.skip())
 			{
 				command::list list; 
@@ -192,7 +194,7 @@ list.0.N:	/* empty string */
 				$$ = std::move(list);
 			}
 		}
-	  |  list.0.N COMMA list          { 
+	  |  list.0.N COMMA any_parameter          { 
 		  if (!_.skip()) {
 				command::list list; 
 				if ($1.index() == 1) 

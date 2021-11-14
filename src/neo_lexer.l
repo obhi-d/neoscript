@@ -2,6 +2,7 @@
 %option noyywrap
 %option prefix="neo_"
 %option never-interactive
+
 %{
 #include <cstdint>
 #include <string>
