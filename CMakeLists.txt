@@ -66,8 +66,20 @@ add_custom_target(
 message("Target name: ${NEOSCRIPT_TARGET_NAME}")
 
 if (NEOSCRIPT_HEADER_ONLY)
+
   add_library(${NEOSCRIPT_TARGET_NAME} INTERFACE)
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  )
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  )
+
 elseif (NEOSCRIPT_BUILD_STATIC)
+
   add_library(${NEOSCRIPT_TARGET_NAME} STATIC
     src/neo_state_machine.cpp
     src/neo_command_instance.cpp
@@ -76,7 +88,19 @@ elseif (NEOSCRIPT_BUILD_STATIC)
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
   target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+  
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  )
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  )
+
 else()
+
   add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
     src/neo_state_machine.cpp
     src/neo_command_instance.cpp
@@ -88,6 +112,17 @@ else()
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
   target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+  
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  )
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  )
+
 endif()
 
 
@@ -102,16 +137,6 @@ endif()
 
 add_dependencies(${NEOSCRIPT_TARGET_NAME} ${NEOSCRIPT_TARGET_NAME}.PreBuild)
 add_library(${PROJECT_NAME}::${NEOSCRIPT_TARGET_NAME} ALIAS ${NEOSCRIPT_TARGET_NAME})
-
-target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-)
 
 ##
 ## TESTS
