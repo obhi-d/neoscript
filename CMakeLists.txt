@@ -146,10 +146,9 @@ include(CTest) #adds option BUILD_TESTING (default ON)
 if(BUILD_TESTING AND NEOSCRIPT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(unit_tests)
+    # Utility
+    add_subdirectory(utility)
 endif()
-
-# Utility
-add_subdirectory(utility)
 # INSTALL
 
 install(TARGETS ${PROJECT_NAME}
