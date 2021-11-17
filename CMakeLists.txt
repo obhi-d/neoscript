@@ -75,6 +75,7 @@ elseif (NEOSCRIPT_BUILD_STATIC)
     "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
+  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 else()
   add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
     src/neo_state_machine.cpp
@@ -83,12 +84,13 @@ else()
     "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
+
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
+  target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
+  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 endif()
 
 
-
-target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   if (NEOSCRIPT_USE_LIBCPP_CLANG)
@@ -100,7 +102,7 @@ endif()
 
 add_dependencies(${NEOSCRIPT_TARGET_NAME} ${NEOSCRIPT_TARGET_NAME}.PreBuild)
 add_library(${PROJECT_NAME}::${NEOSCRIPT_TARGET_NAME} ALIAS ${NEOSCRIPT_TARGET_NAME})
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
 target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}
     PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
