@@ -5,7 +5,9 @@ project(neoscript VERSION 0.0.1 LANGUAGES CXX)
 
 option(NEOSCRIPT_BUILD_TESTS      "Build the unit tests when BUILD_TESTING is enabled." ON)
 option(NEOSCRIPT_BUILD_STATIC     "Build as static lib."                                ON)
+option(NEOSCRIPT_HEADER_ONLY      "Header only build."                                  OFF)
 option(NEOSCRIPT_USE_LIBCPP_CLANG "Use libc++ for clang"                                ON)
+option(NEOSCRIPT_USE_PRE_GENERATED_PARSERS "Use already generated parsers"                       ON)
 set   (NEOSCRIPT_BISON            "bison"                                               CACHE STRING "Bison execuatable")
 set   (NEOSCRIPT_FLEX              "flex"                                                CACHE STRING "Flex executable"  )
 
@@ -15,49 +17,76 @@ set   (NEOSCRIPT_FLEX              "flex"                                       
 set(NEOSCRIPT_TARGET_NAME               ${PROJECT_NAME})
 set(NEOSCRIPT_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
 
+if (NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
+
 add_custom_command( 
 	OUTPUT 
-		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp" 
-	 COMMAND ${NEOSCRIPT_BISON} -o ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp --no-lines ${PROJECT_SOURCE_DIR}/src/neo_parser.yy
+		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
+        "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
+
+   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
+   COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
+   DEPENDS 
+		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
+        "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
+
+ )
+
+else(NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
+
+add_custom_command( 
+	OUTPUT 
+		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
+     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
+	 COMMAND ${NEOSCRIPT_BISON} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" --no-lines "${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
+     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen"
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
  )
 add_custom_command( 
 	OUTPUT 
-		"${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp" 
-	 COMMAND ${NEOSCRIPT_FLEX} -o ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
+		"${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
+	 COMMAND ${NEOSCRIPT_FLEX} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
+     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" "${PROJECT_SOURCE_DIR}/gen"
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
-		"${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp"
+		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
     )
+
+endif(NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
+
 add_custom_target(
   ${NEOSCRIPT_TARGET_NAME}.PreBuild DEPENDS
-  ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp
 )
 ##
 ## TARGET
 ##
 message("Target name: ${NEOSCRIPT_TARGET_NAME}")
 
-if (NEOSCRIPT_BUILD_STATIC)
+if (NEOSCRIPT_HEADER_ONLY)
+  add_library(${NEOSCRIPT_TARGET_NAME} INTERFACE)
+elseif (NEOSCRIPT_BUILD_STATIC)
   add_library(${NEOSCRIPT_TARGET_NAME} STATIC
     src/neo_state_machine.cpp
     src/neo_command_instance.cpp
     src/neo_command_template.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
-else(NEOSCRIPT_BUILD_STATIC)
+else()
   add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
     src/neo_state_machine.cpp
     src/neo_command_instance.cpp
     src/neo_command_template.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/parse.neo.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/lex.neo.cpp
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
-endif(NEOSCRIPT_BUILD_STATIC)
+endif()
+
+
 
 target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
 
@@ -127,3 +156,14 @@ if(DEFINED CMAKE_INSTALL_DATAROOTDIR)
 endif()
 
 install(DIRECTORY include DESTINATION .)
+
+if (NEOSCRIPT_HEADER_ONLY)
+install(FILES 
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
+    "${PROJECT_SOURCE_DIR}/src/neo_command_instance.cpp"
+    "${PROJECT_SOURCE_DIR}/src/neo_command_template.cpp"
+    "${PROJECT_SOURCE_DIR}/src/neo_state_machine.cpp"
+    DESTINATION include/detail)
+endif()

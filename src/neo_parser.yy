@@ -1,5 +1,6 @@
 %language "C++"
 %skeleton "lalr1.cc"
+%require "3.2"
 
 %defines
 %define api.parser.class {parser_impl}

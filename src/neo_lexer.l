@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 #include <neo_state_machine.hpp>
-#include <parse.neo.hpp>
+#include "parse.neo.hpp"
 #define YY_NO_UNISTD_H
 #define YY_EXTRA_TYPE neo::state_machine*
 #define YY_INPUT(buf,result,max_size)       \
