@@ -7,8 +7,8 @@
 std::string to_string(neo::command::param_t const& param)
 {
   std::string output;
-  std::visit(neo::overloaded{[&](auto const&) {},
-                             [&](neo::command::single const& s)
+  std::visit(neo::overloaded{[&](std::monostate const&) {},
+                             [&](auto const& s)
                              {
                                if (s.name().length() > 0)
                                {

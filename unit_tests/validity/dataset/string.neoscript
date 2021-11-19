@@ -1,2 +1,3 @@
 
 command "my full string";
+command "esq \" string";

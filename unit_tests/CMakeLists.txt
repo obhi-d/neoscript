@@ -56,8 +56,14 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(NEO_COMMON_CXX_LINK_FLAGS "")
 endif()
 
+file(GLOB NEO_DATASET CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/dataset/*.neoscript)
+file(GLOB NEO_EXPECTED CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected/*.neoscript)
+
 validity_test("cpp" "" "${NEO_COMMON_CXX_FLAGS}" "${NEO_COMMON_CXX_LINK_FLAGS}")
 add_custom_command(TARGET neotest-validity-cpp PRE_BUILD 
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/dataset ${CMAKE_BINARY_DIR}/dataset
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected ${CMAKE_BINARY_DIR}/expected
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/output)
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/output
+  DEPENDS ${NEO_DATASET}
+  DEPENDS ${NEO_EXPECTED}
+)
