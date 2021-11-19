@@ -61,19 +61,19 @@ class NEO_API esq_string
 public:
   inline esq_string() noexcept = default;
   inline esq_string(esq_string const& _) noexcept
-      : name_(_.name_), value_(_.value_)
+      : name_(_.name_), value_(std::move(fixed_string(_.value_.as_view())))
   {}
   inline esq_string(esq_string&&) noexcept = default;
 
-  inline esq_string(std::string value) noexcept : value_(std::move(value)) {}
-  inline esq_string(std::string_view name, std::string value) noexcept
+  inline esq_string(neo::fixed_string value) noexcept : value_(std::move(value)) {}
+  inline esq_string(std::string_view name, neo::fixed_string value) noexcept
       : name_(name), value_(std::move(value))
   {}
 
   inline esq_string& operator=(esq_string const& _) noexcept
   {
     name_  = _.name_;
-    value_ = _.value_;
+    value_ = std::move(fixed_string( _.value_.as_view()));
     return *this;
   }
   inline esq_string& operator=(esq_string&&) noexcept = default;
@@ -82,22 +82,22 @@ public:
   {
     name_ = std::move(name);
   }
-  inline void set_value(std::string value) noexcept
+  inline void set_value(std::string_view value) noexcept
   {
-    value_ = std::move(value);
+    value_ = std::move(fixed_string(value));
   }
 
   inline std::string_view name() const noexcept { return name_; }
-  inline std::string_view value() const noexcept { return value_; }
+  inline std::string_view value() const noexcept { return value_.as_view(); }
   // Return either name or value iff name is empty.
   inline std::string_view nonempty() const noexcept
   {
-    return name_.empty() ? value_ : name_;
+    return name_.empty() ? value_.as_view() : name_;
   }
 
 private:
   std::string_view name_;
-  std::string      value_;
+  fixed_string     value_;
 };
 
 class NEO_API list

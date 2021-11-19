@@ -96,7 +96,7 @@ statement:
 													if (ss.index() == 0) 
 														_.import_script(std::get<std::string_view>(ss)); 
 													else 
-														_.import_script(std::get<std::string>(ss)); 
+														_.import_script(std::get<fixed_string>(ss).as_view()); 
 												 }
 
 
@@ -188,11 +188,11 @@ special_parameter: IDENTIFIER  ASSIGN  parameter
 parameter: STRING_LITERAL						{ 
 													if (!_.skip()) 
 													{
-														auto const& ss = $1;	
+														auto& ss = $1;	
 														if (ss.index() == 0) 
 															$$ = command::single(std::get<std::string_view>(ss));  
 														else 
-															$$ = command::esq_string(std::get<std::string>(ss));  
+															$$ = std::move(command::esq_string(std::move(std::get<fixed_string>(ss))));  
 													}
 														
 												}

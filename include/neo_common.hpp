@@ -4,6 +4,7 @@
 #include <string_view>
 #include <string>
 #include <variant>
+#include <memory>
 
 #ifdef NEO_DYN_LIB_
 #if defined _WIN32 || defined __CYGWIN__
@@ -69,6 +70,31 @@ struct text_content
       o += f;
   }
 };
+struct fixed_string
+{
+  std::unique_ptr<char[]> fixed_;
+  std::size_t             length_ = 0;
 
-using flex_string = std::variant<std::string_view, std::string>;
+  fixed_string(std::unique_ptr<char[]> other, std::size_t length)
+      : fixed_(std::move(other)), length_(length)
+  {}
+  fixed_string(std::string_view other)
+      : fixed_(new char[other.length()]), length_(other.length())
+  {
+    std::memcpy(fixed_.get(), other.data(), other.length());
+  }
+  fixed_string() = default;
+  fixed_string(fixed_string const&) = default;
+  fixed_string(fixed_string &&) = default;
+  fixed_string& operator=(fixed_string const&) = default;
+  fixed_string& operator=(fixed_string&&) = default;
+
+  std::size_t length() const { return length_; }
+  std::string_view as_view() const
+  {
+    return std::string_view(fixed_.get(), length_);
+  }
+};
+
+using flex_string = std::variant<std::string_view, fixed_string>;
 } // namespace neo

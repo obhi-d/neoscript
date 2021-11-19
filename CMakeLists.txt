@@ -77,6 +77,10 @@ if (NEOSCRIPT_HEADER_ONLY)
     ${NEOSCRIPT_TARGET_NAME}
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+    
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
+    target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "/Zc:__cplusplus")
+  endif()
 
 elseif (NEOSCRIPT_BUILD_STATIC)
 
@@ -88,7 +92,6 @@ elseif (NEOSCRIPT_BUILD_STATIC)
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
   target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-  
   target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}
     PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
@@ -98,6 +101,10 @@ elseif (NEOSCRIPT_BUILD_STATIC)
     ${NEOSCRIPT_TARGET_NAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+  
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
+    target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "/Zc:__cplusplus")
+  endif()
 
 else()
 
@@ -122,6 +129,10 @@ else()
     ${NEOSCRIPT_TARGET_NAME}
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   )
+
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
+    target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "/Zc:__cplusplus")
+  endif()
 
 endif()
 

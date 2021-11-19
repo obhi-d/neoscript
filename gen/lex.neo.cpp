@@ -1075,12 +1075,10 @@ YY_RULE_SETUP
 		return neo::parser_impl::make_STRING_LITERAL(tok, _.loc());
 	else
 	{
-		std::string content;
-		content.reserve(s.size() + tok.size() + 1);
-		content = s;
-		content += tok;
+		s += tok;
+		auto fs = neo::fixed_string(s);
 		s.clear();
-		return neo::parser_impl::make_STRING_LITERAL(std::move(content), _.loc());
+		return neo::parser_impl::make_STRING_LITERAL(std::move(fs), _.loc());
 	}
 }
 	YY_BREAK

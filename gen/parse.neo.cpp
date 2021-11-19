@@ -801,7 +801,7 @@ namespace neo {
 													if (ss.index() == 0) 
 														_.import_script(std::get<std::string_view>(ss)); 
 													else 
-														_.import_script(std::get<std::string>(ss)); 
+														_.import_script(std::get<fixed_string>(ss).as_view()); 
 												 }
     break;
 
@@ -902,11 +902,11 @@ namespace neo {
                                                                         { 
 													if (!_.skip()) 
 													{
-														auto const& ss = yystack_[0].value.as < neo::flex_string > ();	
+														auto& ss = yystack_[0].value.as < neo::flex_string > ();	
 														if (ss.index() == 0) 
 															yylhs.value.as < command::param_t > () = command::single(std::get<std::string_view>(ss));  
 														else 
-															yylhs.value.as < command::param_t > () = command::esq_string(std::get<std::string>(ss));  
+															yylhs.value.as < command::param_t > () = std::move(command::esq_string(std::move(std::get<fixed_string>(ss))));  
 													}
 														
 												}
