@@ -230,6 +230,10 @@ namespace neo {
         value.YY_MOVE_OR_COPY< command_template > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.YY_MOVE_OR_COPY< neo::flex_string > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.YY_MOVE_OR_COPY< neo::text_content > (YY_MOVE (that.value));
         break;
@@ -237,7 +241,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.YY_MOVE_OR_COPY< std::string_view > (YY_MOVE (that.value));
         break;
@@ -284,6 +287,10 @@ namespace neo {
         value.move< command_template > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.move< neo::flex_string > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.move< neo::text_content > (YY_MOVE (that.value));
         break;
@@ -291,7 +298,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (YY_MOVE (that.value));
         break;
@@ -338,6 +344,10 @@ namespace neo {
         value.copy< command_template > (that.value);
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.copy< neo::flex_string > (that.value);
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.copy< neo::text_content > (that.value);
         break;
@@ -345,7 +355,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.copy< std::string_view > (that.value);
         break;
@@ -391,6 +400,10 @@ namespace neo {
         value.move< command_template > (that.value);
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.move< neo::flex_string > (that.value);
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.move< neo::text_content > (that.value);
         break;
@@ -398,7 +411,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (that.value);
         break;
@@ -452,10 +464,6 @@ namespace neo {
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-                 { yyoutput << yysym.value.template as < std::string_view > (); }
-        break;
-
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
                  { yyoutput << yysym.value.template as < std::string_view > (); }
         break;
 
@@ -720,6 +728,10 @@ namespace neo {
         yylhs.value.emplace< command_template > ();
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        yylhs.value.emplace< neo::flex_string > ();
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         yylhs.value.emplace< neo::text_content > ();
         break;
@@ -727,7 +739,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         yylhs.value.emplace< std::string_view > ();
         break;
@@ -785,7 +796,13 @@ namespace neo {
     break;
 
   case 11: // statement: "import" STRING_LITERAL ";"
-                                                         { _.import_script(std::move(yystack_[1].value.as < std::string_view > ()));                                      }
+                                                         { 
+													auto const& ss = yystack_[1].value.as < neo::flex_string > ();
+													if (ss.index() == 0) 
+														_.import_script(std::get<std::string_view>(ss)); 
+													else 
+														_.import_script(std::get<std::string>(ss)); 
+												 }
     break;
 
   case 13: // template_args.0.N: IDENTIFIER
@@ -882,7 +899,17 @@ namespace neo {
     break;
 
   case 30: // parameter: STRING_LITERAL
-                                                                              { if (!_.skip()) yylhs.value.as < command::param_t > () = command::single(std::move(yystack_[0].value.as < std::string_view > ())); }
+                                                                        { 
+													if (!_.skip()) 
+													{
+														auto const& ss = yystack_[0].value.as < neo::flex_string > ();	
+														if (ss.index() == 0) 
+															yylhs.value.as < command::param_t > () = command::single(std::get<std::string_view>(ss));  
+														else 
+															yylhs.value.as < command::param_t > () = command::esq_string(std::get<std::string>(ss));  
+													}
+														
+												}
     break;
 
   case 31: // parameter: IDENTIFIER
@@ -1393,10 +1420,10 @@ namespace neo {
   const unsigned char
   parser_impl::yyrline_[] =
   {
-       0,    82,    82,    83,    86,    87,    88,    89,    90,    91,
-      92,    93,    96,    97,   105,   114,   119,   126,   127,   128,
-     131,   132,   134,   135,   137,   138,   139,   142,   143,   171,
-     181,   182,   183,   186,   187,   190,   191,   199
+       0,    83,    83,    84,    87,    88,    89,    90,    91,    92,
+      93,    94,   103,   104,   112,   121,   126,   133,   134,   135,
+     138,   139,   141,   142,   144,   145,   146,   149,   150,   178,
+     188,   199,   200,   203,   204,   207,   208,   216
   };
 
   void

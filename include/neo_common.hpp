@@ -2,6 +2,8 @@
 #include <cassert>
 #include <vector>
 #include <string_view>
+#include <string>
+#include <variant>
 
 #ifdef NEO_DYN_LIB_
 #if defined _WIN32 || defined __CYGWIN__
@@ -68,4 +70,5 @@ struct text_content
   }
 };
 
+using flex_string = std::variant<std::string_view, std::string>;
 } // namespace neo

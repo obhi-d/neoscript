@@ -62,7 +62,8 @@ YY_DECL;
 	IMPORT	   "import"
 	;
 
-%token <std::string_view> REGION_ID TEXT_REGION_ID IDENTIFIER STRING_LITERAL
+%token <std::string_view> REGION_ID TEXT_REGION_ID IDENTIFIER 
+%token <neo::flex_string> STRING_LITERAL
 %token <neo::text_content> TEXT_CONTENTS 
 
 // Types
@@ -90,7 +91,13 @@ statement:
 		| RBRACKET                               { if (!_.skip()) _.end_block(); else _.exit_skip_scope();              }
 		| REGION_ID                              { _.start_region(std::move($1));                                       }
 		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));                        }
-		| IMPORT STRING_LITERAL SEMICOLON        { _.import_script(std::move($2));                                      }
+		| IMPORT STRING_LITERAL SEMICOLON        { 
+													auto const& ss = $2;
+													if (ss.index() == 0) 
+														_.import_script(std::get<std::string_view>(ss)); 
+													else 
+														_.import_script(std::get<std::string>(ss)); 
+												 }
 
 
 template_args.0.N:	/* empty string */		
@@ -178,7 +185,17 @@ special_parameter: IDENTIFIER  ASSIGN  parameter
 			}
 			;
 
-parameter: STRING_LITERAL						      { if (!_.skip()) $$ = command::single(std::move($1)); }
+parameter: STRING_LITERAL						{ 
+													if (!_.skip()) 
+													{
+														auto const& ss = $1;	
+														if (ss.index() == 0) 
+															$$ = command::single(std::get<std::string_view>(ss));  
+														else 
+															$$ = command::esq_string(std::get<std::string>(ss));  
+													}
+														
+												}
 			| IDENTIFIER                        { if (!_.skip()) $$ = command::single(std::move($1)); }
 			| LSQBRACKET list.0.N RSQBRACKET    { if (!_.skip()) $$ = std::move($2); }
 			;

@@ -14,7 +14,7 @@ void command_instance::build(neo::state_machine&          ctx,
   std::visit(
       overloaded{
           [](std::monostate const&) {},
-          [&params, &param_m](neo::command::single const& s)
+          [&params, &param_m](auto const& s)
           {
             std::string_view name = s.name();
             if (name.length() > 0)

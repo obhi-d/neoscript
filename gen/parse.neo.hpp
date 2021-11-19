@@ -430,18 +430,20 @@ namespace neo {
       // templatedecl
       char dummy5[sizeof (command_template)];
 
+      // STRING_LITERAL
+      char dummy6[sizeof (neo::flex_string)];
+
       // TEXT_CONTENTS
-      char dummy6[sizeof (neo::text_content)];
+      char dummy7[sizeof (neo::text_content)];
 
       // REGION_ID
       // TEXT_REGION_ID
       // IDENTIFIER
-      // STRING_LITERAL
       // commandname
-      char dummy7[sizeof (std::string_view)];
+      char dummy8[sizeof (std::string_view)];
 
       // template_args.0.N
-      char dummy8[sizeof (std::vector<std::string_view>)];
+      char dummy9[sizeof (std::vector<std::string_view>)];
     };
 
     /// The size of the largest semantic type.
@@ -626,6 +628,10 @@ namespace neo {
         value.move< command_template > (std::move (that.value));
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.move< neo::flex_string > (std::move (that.value));
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.move< neo::text_content > (std::move (that.value));
         break;
@@ -633,7 +639,6 @@ namespace neo {
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (std::move (that.value));
         break;
@@ -736,6 +741,20 @@ namespace neo {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, neo::flex_string&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const neo::flex_string& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, neo::text_content&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -822,6 +841,10 @@ switch (yykind)
         value.template destroy< command_template > ();
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.template destroy< neo::flex_string > ();
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.template destroy< neo::text_content > ();
         break;
@@ -829,7 +852,6 @@ switch (yykind)
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.template destroy< std::string_view > ();
         break;
@@ -936,6 +958,16 @@ switch (yykind)
                    || (token::NEO_error <= tok && tok <= token::IMPORT));
       }
 #if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, neo::flex_string v, location_type l)
+        : super_type(token_type (tok), std::move (v), std::move (l))
+#else
+      symbol_type (int tok, const neo::flex_string& v, const location_type& l)
+        : super_type(token_type (tok), v, l)
+#endif
+      {
+        NEO__ASSERT (tok == token::STRING_LITERAL);
+      }
+#if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, neo::text_content v, location_type l)
         : super_type(token_type (tok), std::move (v), std::move (l))
 #else
@@ -953,7 +985,7 @@ switch (yykind)
         : super_type(token_type (tok), v, l)
 #endif
       {
-        NEO__ASSERT ((token::REGION_ID <= tok && tok <= token::STRING_LITERAL));
+        NEO__ASSERT ((token::REGION_ID <= tok && tok <= token::IDENTIFIER));
       }
     };
 
@@ -1321,14 +1353,14 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_STRING_LITERAL (std::string_view v, location_type l)
+      make_STRING_LITERAL (neo::flex_string v, location_type l)
       {
         return symbol_type (token::STRING_LITERAL, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_STRING_LITERAL (const std::string_view& v, const location_type& l)
+      make_STRING_LITERAL (const neo::flex_string& v, const location_type& l)
       {
         return symbol_type (token::STRING_LITERAL, v, l);
       }
@@ -1771,6 +1803,10 @@ switch (yykind)
         value.copy< command_template > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.copy< neo::flex_string > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.copy< neo::text_content > (YY_MOVE (that.value));
         break;
@@ -1778,7 +1814,6 @@ switch (yykind)
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.copy< std::string_view > (YY_MOVE (that.value));
         break;
@@ -1839,6 +1874,10 @@ switch (yykind)
         value.move< command_template > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
+        value.move< neo::flex_string > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_TEXT_CONTENTS: // TEXT_CONTENTS
         value.move< neo::text_content > (YY_MOVE (s.value));
         break;
@@ -1846,7 +1885,6 @@ switch (yykind)
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-      case symbol_kind::S_STRING_LITERAL: // STRING_LITERAL
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (YY_MOVE (s.value));
         break;

@@ -55,14 +55,25 @@ BLANK   [ \t]
 <STATE_STR>{
 \"     			{
 	auto tok = _.make_token();
+	auto& s  = _.manage_esq_string();
 	_.skip_len(1);
 	BEGIN(STATE_CONTENT);  
-	return neo::parser_impl::make_STRING_LITERAL(tok, _.loc());
+	if (s.empty())
+		return neo::parser_impl::make_STRING_LITERAL(tok, _.loc());
+	else
+	{
+		std::string content;
+		content.reserve(s.size() + tok.size() + 1);
+		content = s;
+		content += tok;
+		s.clear();
+		return neo::parser_impl::make_STRING_LITERAL(std::move(content), _.loc());
+	}
 }
 \\\"	{
-	// Unfortuanately we canot handle escape seq very well, it is the responsibility
-	// of application to read the string correctly
-	_.put(2);
+	_.append_to_esqstr(_.make_token());
+	_.skip_len(1);
+	_.put(1);
 }
 .		{ 
 		_.put(1);

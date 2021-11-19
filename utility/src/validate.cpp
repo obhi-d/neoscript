@@ -131,6 +131,8 @@ std::string read_file(std::filesystem::path path)
 
 int main(int argc, char** argv)
 {
+  std::cout << "sizeof esqstring " << sizeof(neo::esq_string) << " vs single "
+            << sizeof(neo::single) << " vs list " << sizeof(neo::list) << std::endl;
   int rc = 0;
   if (argc > 1)
   {

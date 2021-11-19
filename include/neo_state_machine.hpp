@@ -87,6 +87,16 @@ public:
     return m;
   }
 
+  void append_to_esqstr(std::string_view ss) noexcept 
+  { 
+    esq_string_ += ss;
+  }
+
+  std::string& manage_esq_string() noexcept 
+  { 
+    return esq_string_;
+  }
+
   void push_content() noexcept
   {
     content_.fragments.push_back(make_token());
@@ -203,6 +213,7 @@ private:
   std::string_view              current_file_;
   std::string                   source_name_;
   std::string_view              region_type_;
+  std::string                   esq_string_;
   location_type                 loc_;
   option_flags                  flags_       = 0;
   std::int32_t                  skip_        = 0;
