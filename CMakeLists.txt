@@ -91,7 +91,7 @@ elseif (NEOSCRIPT_BUILD_STATIC)
     "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
   )
-  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
   target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}
     PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
@@ -118,7 +118,7 @@ else()
 
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
-  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
   
   target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}

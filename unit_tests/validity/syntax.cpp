@@ -362,3 +362,35 @@ TEST_CASE("Skip test rest of commands", "[skip2]")
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(h.inner_call == 1);
 }
+
+
+// Macro compilation test
+struct null_h : neo::command_handler
+{
+};
+
+neo_cmd_handler(example1, null_h, obj, state, cmd)
+{
+  return neo::retcode::e_success;
+}
+
+neo_cmdend_handler(example1, null_h, obj, state, cmd) 
+{}
+
+neo_text_handler(example2, null_h, obj, state, type, name, ctx) {}
+
+neo_star_handler(example1, null_h, o, s, c) 
+{ return neo::retcode::e_success; }
+
+neo_registry(test) 
+{ 
+  neo_cmd(example1);
+  neo_scope(example1)
+  { 
+    neo_cmd(example1);
+    neo_alias("@/example1/example1", "@/example1/example1/example1");
+    neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
+  }
+}
+
+

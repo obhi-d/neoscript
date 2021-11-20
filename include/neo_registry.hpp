@@ -54,7 +54,20 @@ using textreg_hook = void (*)(command_handler*          obj,
                               std::string_view text_type, std::string_view name,
                               text_content&& content) noexcept;
 
-using command_id  = std::pair<std::uint32_t, std::uint32_t>;
+struct command_id
+{
+  std::uint32_t parent = 0;
+  std::uint32_t iid    = 0;
+
+  inline constexpr operator bool() const noexcept { return true; }
+
+  inline bool operator==(command_id const&) const noexcept = default;
+  inline bool operator!=(command_id const&) const noexcept = default;
+
+  command_id() = default;
+  command_id(std::uint32_t f, std::uint32_t i) : parent(f), iid(i) {}
+};
+
 using registry_id = std::uint32_t;
 
 class registry
@@ -127,17 +140,17 @@ public:
   inline void alias_command(command_id new_parent_scope, std::string_view name,
                             command_id existing)
   {
-    auto&   old_parent = blocks_[existing.first & k_np_cl_mask];
+    auto&   old_parent = blocks_[existing.parent & k_np_cl_mask];
     handler h;
     for (auto& e : old_parent.events_)
     {
-      if (e.second.iid_ == existing.second)
+      if (e.second.iid_ == existing.iid)
       {
         h = e.second;
         break;
       }
     }
-    blocks_[new_parent_scope.first].events_[name] = h;
+    blocks_[new_parent_scope.parent].events_[name] = h;
   }
   /// Alias the behaviour of an already registered command with a new
   /// command path. Path starts with region name.
@@ -185,7 +198,7 @@ private:
       command_end_hook end = nullptr) noexcept
 
   {
-    assert(parent_scope.first < blocks_.size());
+    assert(parent_scope.parent < blocks_.size());
     std::uint32_t iid = k_np_id_mask;
     std::uint32_t id  = 0xffffffff;
     if (is_scoped)
@@ -193,7 +206,7 @@ private:
       iid = 0;
       if (cmd == "*")
       {
-        id = parent_scope.first;
+        id = parent_scope.parent;
       }
       else
       {
@@ -203,14 +216,14 @@ private:
       blocks_[id].end_ = end;
     }
     else
-      id = k_np_id_mask | parent_scope.first;
-    auto& block_ref = blocks_[parent_scope.first];
+      id = k_np_id_mask | parent_scope.parent;
+    auto& block_ref = blocks_[parent_scope.parent];
     iid |= static_cast<std::uint32_t>(block_ref.events_.size());
     if (cmd == "*")
       block_ref.any_ = callback;
     else
       block_ref.events_[cmd] = handler(callback, id, iid);
-    return std::make_pair(id, iid);
+    return command_id{id, iid};
   }
 
   inline std::uint32_t find_parent_block(
@@ -264,7 +277,7 @@ private:
       auto it = blocks_[root].events_.find(ss);
       if (it == blocks_[root].events_.end())
       {
-        root = internal_add_command(command_id{root, 0}, ss).first;
+        root = internal_add_command(command_id{root, 0}, ss).parent;
       }
       else
       {
@@ -345,17 +358,31 @@ private:
   neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
 
 #define neo_registry(name)                                                     \
-  void neo_tp(registry_, name)(neo::registry & r, neo::command_id p = {},       \
-                               neo::command_id c = {})
+  void neo_tp(registry_, name)(neo::registry & r, neo::command_id parent_cmd_id = {},       \
+                               neo::command_id current_cmd_id = {})
 
-#define neo_star(name) c = r.add_command(p, "*", neo_tp(neo_tp(cmd_, name), _star))
-#define neo_cmd(name)  c = r.add_command(p, #name, neo_tp(cmd_, name))
+#define neo_star(name) current_cmd_id = r.add_command(parent_cmd_id, "*", neo_tp(neo_tp(cmd_, name), _star))
+#define neo_cmd(name)            current_cmd_id = r.add_command(parent_cmd_id, #name, neo_tp(cmd_, name))
+
+#define neo_scope_safe_(name, v) \
+  current_cmd_id = parent_cmd_id; \
+  if (auto parent_cmd_id =                                                     \
+          r.add_scoped_command(current_cmd_id, #name,         \
+                                                neo_tp(cmd_, name), nullptr))
+
+#define neo_blk_safe_(name, v)                                               \
+  current_cmd_id = parent_cmd_id;                                                      \
+  if (auto parent_cmd_id =                                                     \
+          r.add_scoped_command(                               \
+          current_cmd_id, #name, neo_tp(cmd_, name),  \
+                                                neo_tp(cmd_, name)))
+
 #define neo_scope(name)                                                        \
-  if (auto p =                                                        \
-          r.add_scoped_command(p, #name, neo_tp(cmd_, name), nullptr))
+  neo_scope_safe_(name, neo_tp(save_, __LINE__))
+
 #define neo_blk(name)                                                          \
-  if (auto p = r.add_scoped_command(p, #name, neo_tp(cmd_, name),     \
-                                             neo_tp(cmd_, name)))
+  neo_blk_safe_(name, neo_tp(save_, __LINE__))
+
 #define neo_alias(src, dst) r.alias_command(src, dst)
 #define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
 #define neo_savecmd(as) auto as = c
