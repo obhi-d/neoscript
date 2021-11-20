@@ -81,6 +81,7 @@ class registry
 
 public:
   static constexpr std::uint32_t k_np_id_mask = 0x80000000;
+  static constexpr std::uint32_t k_np_cl_mask = ~k_np_id_mask;
   static constexpr std::uint32_t k_invalid_id = 0xffffffff;
 
   registry() noexcept
@@ -126,7 +127,7 @@ public:
   inline void alias_command(command_id new_parent_scope, std::string_view name,
                             command_id existing)
   {
-    auto&   old_parent = blocks_[existing.first];
+    auto&   old_parent = blocks_[existing.first & k_np_cl_mask];
     handler h;
     for (auto& e : old_parent.events_)
     {
@@ -201,6 +202,8 @@ private:
       }
       blocks_[id].end_ = end;
     }
+    else
+      id = k_np_id_mask | parent_scope.first;
     auto& block_ref = blocks_[parent_scope.first];
     iid |= static_cast<std::uint32_t>(block_ref.events_.size());
     if (cmd == "*")
@@ -252,7 +255,7 @@ private:
       src_path = src_path.substr(pos + 1);
     }
 
-    std::uint32_t root = get_region_root(src_reg);
+    std::uint32_t root = get_region_root(src_reg) & k_np_cl_mask;
     std::size_t   pos;
 
     while ((pos = src_path.find_first_of('/')) != std::string_view::npos)
@@ -267,7 +270,7 @@ private:
       {
         root = (*it).second.sub_handlers_;
       }
-      src_path = src_path.substr(pos);
+      src_path = src_path.substr(pos + 1);
     }
     return root;
   }
@@ -352,3 +355,6 @@ private:
 #define neo_blk(name)                                                          \
   if (std::uint32_t p = r.add_scoped_command(p, #name, neo_tp(cmd_, name),     \
                                              neo_tp(cmd_, name)))
+#define neo_alias(src, dst) r.alias_command(src, dst)
+#define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
+

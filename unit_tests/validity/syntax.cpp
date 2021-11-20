@@ -240,6 +240,35 @@ TEST_CASE("Any command", "[region2]")
                             "print --> (region = text:History)\n");
 }
 
+TEST_CASE("Alias command", "[alias]")
+{
+  neo::registry test_interpreter;
+  std::string   test = "print message;\n"
+                     "scope {\n"
+                     " print message2;\n"
+                     " scope {\n"
+                     "    print message3;\n"
+                     "}};\n";
+
+  neo::command_hook lambda =
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+  { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); };
+  auto root = test_interpreter.ensure_region_root("");
+  auto id = test_interpreter.add_command(root, "print", lambda);
+  auto scope   = test_interpreter.add_scoped_command(root, "scope");
+  test_interpreter.alias_command(scope, "print", id);
+  auto scope2 = test_interpreter.add_scoped_command(scope, "scope");
+  test_interpreter.alias_command("@/print", "@/scope/scope/print");
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "print --> (message)\n"
+                            "print --> (message2)\n"
+                            "print --> (message3)\n");
+}
+
 TEST_CASE("Block test", "[block]")
 {
   neo::registry test_interpreter;
