@@ -137,6 +137,16 @@ public:
                                 static_cast<command_end_hook>(block_end));
   }
 
+  inline command_id add_scoped_handler_alias(
+      command_id parent_scope, std::string_view cmd, command_id copy_src,
+      command_hook     callback  = nullptr,
+      command_end_hook block_end = nullptr) noexcept
+  {
+    return internal_add_command(
+        parent_scope, cmd, static_cast<command_hook>(callback), true,
+        static_cast<command_end_hook>(block_end), copy_src.parent);
+  }
+
   inline void alias_command(command_id new_parent_scope, std::string_view name,
                             command_id existing)
   {
@@ -192,15 +202,16 @@ public:
 private:
   /// All sub-commands must be registred right after
   /// a parent command is registered
-  inline command_id internal_add_command(
-      command_id parent_scope, std::string_view cmd,
-      command_hook callback = nullptr, bool is_scoped = false,
-      command_end_hook end = nullptr) noexcept
+  inline command_id internal_add_command(command_id       parent_scope,
+                                         std::string_view cmd,
+                                         command_hook     callback  = nullptr,
+                                         bool             is_scoped = false,
+                                         command_end_hook end       = nullptr,
+                                         std::uint32_t id = 0xffffffff) noexcept
 
   {
     assert(parent_scope.parent < blocks_.size());
     std::uint32_t iid = k_np_id_mask;
-    std::uint32_t id  = 0xffffffff;
     if (is_scoped)
     {
       iid = 0;
@@ -208,7 +219,7 @@ private:
       {
         id = parent_scope.parent;
       }
-      else
+      else if (id == 0xffffffff)
       {
         id = static_cast<std::uint32_t>(blocks_.size());
         blocks_.resize(blocks_.size() + 1);
@@ -222,7 +233,7 @@ private:
     if (cmd == "*")
       block_ref.any_ = callback;
     else
-      block_ref.events_[cmd] = handler(callback, id, iid);
+      block_ref.events_[cmd] = handler{callback, id, iid};
     return command_id{id, iid};
   }
 
@@ -318,17 +329,17 @@ private:
       [[maybe_unused]] neo::command const&       iCmd) noexcept
 
 #define neo_cmdend_handler(FnName, Ty, iObj, iState, iName)                    \
-  void neo_tp(callend_,                                                           \
+  void neo_tp(callend_,                                                        \
               FnName)([[maybe_unused]] Ty & iObj,                              \
                       [[maybe_unused]] neo::state_machine const& iState,       \
                       [[maybe_unused]] std::string_view iName) noexcept;       \
-  void neo_tp(cmdend_, FnName)(neo::command_handler * iObj,                       \
-                            neo::state_machine const& iState,                  \
-                            std::string_view          iName) noexcept                   \
+  void neo_tp(cmdend_, FnName)(neo::command_handler * iObj,                    \
+                               neo::state_machine const& iState,               \
+                               std::string_view          iName) noexcept                \
   {                                                                            \
-    neo_tp(callend_, FnName)(static_cast<Ty&>(*iObj), iState, iName);             \
+    neo_tp(callend_, FnName)(static_cast<Ty&>(*iObj), iState, iName);          \
   }                                                                            \
-  void neo_tp(callend_,                                                           \
+  void neo_tp(callend_,                                                        \
               FnName)([[maybe_unused]] Ty & iObj,                              \
                       [[maybe_unused]] neo::state_machine const& iState,       \
                       [[maybe_unused]] std::string_view          iName) noexcept
@@ -358,37 +369,42 @@ private:
   neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
 
 #define neo_registry(name)                                                     \
-  void neo_tp(registry_, name)(neo::registry & r, neo::command_id parent_cmd_id = {},       \
+  void neo_tp(registry_, name)(neo::registry & r,                              \
+                               neo::command_id parent_cmd_id  = {},            \
                                neo::command_id current_cmd_id = {})
 
-#define neo_star(name) current_cmd_id = r.add_command(parent_cmd_id, "*", neo_tp(neo_tp(cmd_, name), _star))
-#define neo_cmd(name)            current_cmd_id = r.add_command(parent_cmd_id, #name, neo_tp(cmd_, name))
+#define neo_star(name)                                                         \
+  current_cmd_id =                                                             \
+      r.add_command(parent_cmd_id, "*", neo_tp(neo_tp(cmd_, name), _star))
+#define neo_cmd(name)                                                          \
+  current_cmd_id = r.add_command(parent_cmd_id, #name, neo_tp(cmd_, name))
 
-#define neo_scope_safe_(name, v) \
-  current_cmd_id = parent_cmd_id; \
-  if (auto parent_cmd_id =                                                     \
-          r.add_scoped_command(current_cmd_id, #name,         \
+#define neo_scope_null_(name, v)                                               \
+  current_cmd_id = parent_cmd_id;                                              \
+  if (auto parent_cmd_id = r.add_scoped_command(current_cmd_id, #name,         \
                                                 neo_tp(cmd_, name), nullptr))
 
-#define neo_blk_safe_(name, v, end)                                               \
-  current_cmd_id = parent_cmd_id;                                                      \
-  if (auto parent_cmd_id =                                                     \
-          r.add_scoped_command(                               \
-          current_cmd_id, #name, neo_tp(cmd_, name),  \
-                                                neo_tp(cmdend_, end)))
+#define neo_scope_safe_(name, v, end)                                          \
+  current_cmd_id = parent_cmd_id;                                              \
+  if (auto parent_cmd_id = r.add_scoped_command(                               \
+          current_cmd_id, #name, neo_tp(cmd_, name), neo_tp(cmdend_, end)))
 
-#define neo_scope_def(name)                                                        \
-  neo_scope_safe_(name, neo_tp(save_, __LINE__))
+#define neo_scope_def(name) neo_scope_null_(name, neo_tp(save_, __LINE__))
 
-#define neo_scope_auto(name)                                                          \
-  neo_blk_safe_(name, neo_tp(save_, __LINE__), name)
+#define neo_scope_auto(name)                                                   \
+  neo_scope_safe_(name, neo_tp(save_, __LINE__), name)
 
-#define neo_scope_end(name, end) neo_blk_safe_(name, neo_tp(save_, __LINE__), end)
+#define neo_scope_cust(name, end)                                              \
+  neo_scope_safe_(name, neo_tp(save_, __LINE__), end)
 
-#define neo_fn(name) neo_tp(cmd_, name)
+#define neo_subalias(name, end, sub)                                           \
+  current_cmd_id = r.add_scoped_handler_alias(                                 \
+      parent_cmd_id, #name, neo_tp(cmd_, name), neo_tp(cmdend_, end), sub)
+
+#define neo_fn(name)    neo_tp(cmd_, name)
 #define neo_fnend(name) neo_tp(cmdend_, name)
 
-#define neo_alias(src, dst) r.alias_command(src, dst)
+#define neo_alias(src, dst)              r.alias_command(src, dst)
 #define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
-#define neo_save_current(as) as = current_cmd_id
-#define neo_save_scope(as)   as = parent_cmd_id
+#define neo_save_current(as)             as = current_cmd_id
+#define neo_save_scope(as)               as = parent_cmd_id

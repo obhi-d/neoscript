@@ -33,6 +33,24 @@ void state_machine::start_region(std::string_view region) noexcept
   block_stack_.push_back(block);
   this->region_ = std::move(region);
 }
+void state_machine::end_block() noexcept
+{
+  if (record_stack_.size() > 0)
+  {
+    record_stack_.pop_back();
+  }
+  else
+  {
+    if (block_stack_.size() <= 1)
+      push_error(loc(), "syntax error, unexpected '}'");
+    else
+    {
+      neo::detail::interpreter::end_scope(registry_, *this, cmd_handler_,
+                                          block_stack_.back(), "");
+      block_stack_.pop_back();
+    }
+  }
+}
 bool state_machine::consume(neo::command&& cmd) noexcept
 {
   if (record_stack_.size() > 0)
@@ -134,24 +152,6 @@ bool state_machine::consume(neo::command_instance&& cmd_inst) noexcept
     return result;
   }
   return true;
-}
-void state_machine::end_block() noexcept
-{
-  if (record_stack_.size() > 0)
-  {
-    record_stack_.pop_back();
-  }
-  else
-  {
-    if (block_stack_.size() <= 1)
-      push_error(loc(), "syntax error, unexpected '}'");
-    else
-    {
-      neo::detail::interpreter::end_scope(registry_, *this, cmd_handler_,
-                                          block_stack_.back(), "");
-      block_stack_.pop_back();
-    }
-  }
 }
 void state_machine::start_region(std::string_view region_id,
                                  text_content&& content) noexcept

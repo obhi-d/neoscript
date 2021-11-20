@@ -243,12 +243,22 @@ TEST_CASE("Any command", "[region2]")
 TEST_CASE("Alias command", "[alias]")
 {
   neo::registry test_interpreter;
-  std::string   test = "print message;\n"
+  std::string_view   test = "print message;\n"
                      "scope {\n"
                      " print message2;\n"
                      " scope {\n"
-                     "    print message3;\n"
-                     "}};\n";
+                     "    print1 message3;\n"
+                     "    print2 message4;\n"
+                     "    print3 message5;\n"
+                     " };\n"
+                     " scope1 {\n"
+                     "  scope2 {\n"
+                     "    print1 message6;\n"
+                     "    print2 message7;\n"
+                     "    print3 message8;\n"
+                     "  };\n"
+                     " };\n"
+                     "};\n";
 
   neo::command_hook lambda =
       [](neo::command_handler* _, neo::state_machine const& ctx,
@@ -259,14 +269,24 @@ TEST_CASE("Alias command", "[alias]")
   auto scope   = test_interpreter.add_scoped_command(root, "scope");
   test_interpreter.alias_command(scope, "print", id);
   auto scope2 = test_interpreter.add_scoped_command(scope, "scope");
-  test_interpreter.alias_command("@/print", "@/scope/scope/print");
+  test_interpreter.alias_command("@/print", "@/scope/scope/print1");
+  test_interpreter.alias_command("@/print", "@/scope/scope/print2");
+  test_interpreter.alias_command("@/print", "@/scope/scope/print3");
+  auto scope3 = test_interpreter.add_scoped_command(scope, "scope1");
+  auto scope4 = test_interpreter.add_scoped_handler_alias(scope3, "scope2", scope2);
   test_command_handler handler;
   neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", test);
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "print --> (message)\n"
                             "print --> (message2)\n"
-                            "print --> (message3)\n");
+                            "print1 --> (message3)\n"
+                            "print2 --> (message4)\n"
+                            "print3 --> (message5)\n"
+                            "print1 --> (message6)\n"
+                            "print2 --> (message7)\n"
+                            "print3 --> (message8)\n"
+                            );
 }
 
 TEST_CASE("Block test", "[block]")
@@ -397,7 +417,7 @@ neo_registry(test)
     neo_alias("@/example1/example1", "@/example1/example1/example1");
     neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
   }
-  neo_scope_end(example1, example1)
+  neo_scope_cust(example1, example1)
   {
     neo_cmd(example1);
     neo_alias("@/example1/example1", "@/example1/example1/example1");
