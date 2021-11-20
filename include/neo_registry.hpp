@@ -345,16 +345,17 @@ private:
   neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
 
 #define neo_registry(name)                                                     \
-  void neo_tp(registry_, name)(neo::registry & r, std::uint32_t p = 0)
+  void neo_tp(registry_, name)(neo::registry & r, neo::command_id p = {},       \
+                               neo::command_id c = {})
 
-#define neo_star(name) r.add_command(p, "*", neo_tp(neo_tp(cmd_, name), _star))
-#define neo_cmd(name)  r.add_command(p, #name, neo_tp(cmd_, name))
+#define neo_star(name) c = r.add_command(p, "*", neo_tp(neo_tp(cmd_, name), _star))
+#define neo_cmd(name)  c = r.add_command(p, #name, neo_tp(cmd_, name))
 #define neo_scope(name)                                                        \
-  if (std::uint32_t p =                                                        \
+  if (auto p =                                                        \
           r.add_scoped_command(p, #name, neo_tp(cmd_, name), nullptr))
 #define neo_blk(name)                                                          \
-  if (std::uint32_t p = r.add_scoped_command(p, #name, neo_tp(cmd_, name),     \
+  if (auto p = r.add_scoped_command(p, #name, neo_tp(cmd_, name),     \
                                              neo_tp(cmd_, name)))
 #define neo_alias(src, dst) r.alias_command(src, dst)
 #define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
-
+#define neo_savecmd(as) auto as = c
