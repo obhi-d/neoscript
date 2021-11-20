@@ -18,7 +18,7 @@ public:
   using esq_string = neo::esq_string;
   using param_t    = list::node;
 
-  inline static std::string_view const& as_string(
+  inline static std::string_view as_string(
       param_t const& source, std::string_view default_val = "",
       std::uint32_t pref_index = 0) noexcept
   {
