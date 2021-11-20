@@ -318,17 +318,17 @@ private:
       [[maybe_unused]] neo::command const&       iCmd) noexcept
 
 #define neo_cmdend_handler(FnName, Ty, iObj, iState, iName)                    \
-  void neo_tp(call_,                                                           \
+  void neo_tp(callend_,                                                           \
               FnName)([[maybe_unused]] Ty & iObj,                              \
                       [[maybe_unused]] neo::state_machine const& iState,       \
                       [[maybe_unused]] std::string_view iName) noexcept;       \
-  void neo_tp(cmd_, FnName)(neo::command_handler * iObj,                       \
+  void neo_tp(cmdend_, FnName)(neo::command_handler * iObj,                       \
                             neo::state_machine const& iState,                  \
                             std::string_view          iName) noexcept                   \
   {                                                                            \
-    neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, iName);             \
+    neo_tp(callend_, FnName)(static_cast<Ty&>(*iObj), iState, iName);             \
   }                                                                            \
-  void neo_tp(call_,                                                           \
+  void neo_tp(callend_,                                                           \
               FnName)([[maybe_unused]] Ty & iObj,                              \
                       [[maybe_unused]] neo::state_machine const& iState,       \
                       [[maybe_unused]] std::string_view          iName) noexcept
@@ -370,19 +370,25 @@ private:
           r.add_scoped_command(current_cmd_id, #name,         \
                                                 neo_tp(cmd_, name), nullptr))
 
-#define neo_blk_safe_(name, v)                                               \
+#define neo_blk_safe_(name, v, end)                                               \
   current_cmd_id = parent_cmd_id;                                                      \
   if (auto parent_cmd_id =                                                     \
           r.add_scoped_command(                               \
           current_cmd_id, #name, neo_tp(cmd_, name),  \
-                                                neo_tp(cmd_, name)))
+                                                neo_tp(cmdend_, end)))
 
-#define neo_scope(name)                                                        \
+#define neo_scope_def(name)                                                        \
   neo_scope_safe_(name, neo_tp(save_, __LINE__))
 
-#define neo_blk(name)                                                          \
-  neo_blk_safe_(name, neo_tp(save_, __LINE__))
+#define neo_scope_auto(name)                                                          \
+  neo_blk_safe_(name, neo_tp(save_, __LINE__), name)
+
+#define neo_scope_end(name, end) neo_blk_safe_(name, neo_tp(save_, __LINE__), end)
+
+#define neo_fn(name) neo_tp(cmd_, name)
+#define neo_fnend(name) neo_tp(cmdend_, name)
 
 #define neo_alias(src, dst) r.alias_command(src, dst)
 #define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
-#define neo_savecmd(as) auto as = c
+#define neo_save_current(as) as = current_cmd_id
+#define neo_save_scope(as)   as = parent_cmd_id

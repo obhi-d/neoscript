@@ -385,8 +385,20 @@ neo_star_handler(example1, null_h, o, s, c)
 neo_registry(test) 
 { 
   neo_cmd(example1);
-  neo_scope(example1)
+  neo_scope_def(example1)
+  {
+    neo_cmd(example1);
+    neo_alias("@/example1/example1", "@/example1/example1/example1");
+    neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
+  }
+  neo_scope_auto(example1)
   { 
+    neo_cmd(example1);
+    neo_alias("@/example1/example1", "@/example1/example1/example1");
+    neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
+  }
+  neo_scope_end(example1, example1)
+  {
     neo_cmd(example1);
     neo_alias("@/example1/example1", "@/example1/example1/example1");
     neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
