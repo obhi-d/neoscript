@@ -368,11 +368,6 @@ private:
 #define neo_star_handler(FnName, Ty, iObj, iState, iCmd)                       \
   neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
 
-#define neo_registry(name)                                                     \
-  void neo_tp(registry_, name)(neo::registry & r,                              \
-                               neo::command_id parent_cmd_id  = {},            \
-                               neo::command_id current_cmd_id = {})
-
 #define neo_star(name)                                                         \
   current_cmd_id =                                                             \
       r.add_command(parent_cmd_id, "*", neo_tp(neo_tp(cmd_, name), _star))
@@ -416,3 +411,10 @@ private:
 #define neo_aliasid(par_scope, name, ex) r.alias_command(par_scope, name, ex)
 #define neo_save_current(as)             as = current_cmd_id
 #define neo_save_scope(as)               as = parent_cmd_id
+
+#define neo_registry(name)                                                     \
+  void neo_tp(register_, name)(neo::registry & r,                              \
+                               neo::command_id parent_cmd_id  = {},            \
+                               neo::command_id current_cmd_id = {})
+
+#define neo_register(name, reg) neo_tp(register_, name)(reg)
