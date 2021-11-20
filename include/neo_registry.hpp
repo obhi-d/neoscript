@@ -54,7 +54,7 @@ using textreg_hook = void (*)(command_handler*          obj,
                               std::string_view text_type, std::string_view name,
                               text_content&& content) noexcept;
 
-using command_id  = std::uint32_t;
+using command_id  = std::pair<std::uint32_t, std::uint32_t>;
 using registry_id = std::uint32_t;
 
 class registry
@@ -64,10 +64,11 @@ class registry
   {
     command_hook  cbk_          = nullptr;
     std::uint32_t sub_handlers_ = 0xffffffff;
+    std::uint32_t iid_          = 0xffffffff;
     handler() noexcept          = default;
-    handler(command_hook cbk, std::uint32_t sub) noexcept
+    handler(command_hook cbk, std::uint32_t sub, std::uint32_t id) noexcept
 
-        : cbk_(std::move(cbk)), sub_handlers_(sub)
+        : cbk_(std::move(cbk)), sub_handlers_(sub), iid_(id)
     {}
   };
 
@@ -79,6 +80,7 @@ class registry
   };
 
 public:
+  static constexpr std::uint32_t k_np_id_mask = 0x80000000;
   static constexpr std::uint32_t k_invalid_id = 0xffffffff;
 
   registry() noexcept
@@ -88,16 +90,16 @@ public:
     blocks_.emplace_back();
   }
 
-  inline std::uint32_t ensure_region_root(std::string_view name) noexcept
+  inline command_id ensure_region_root(std::string_view name) noexcept
 
   {
     auto it = reg_block_mappings_.find(name);
     if (it != reg_block_mappings_.end())
-      return (*it).second;
+      return command_id{(*it).second, 0};
     auto id = static_cast<std::uint32_t>(blocks_.size());
     reg_block_mappings_.emplace(name, id);
     blocks_.resize(static_cast<std::size_t>(id + 1));
-    return id;
+    return command_id{id, 0};
   } /// region type to block mapping
 
   /// A non scoped command registration
@@ -121,6 +123,21 @@ public:
                                 static_cast<command_end_hook>(block_end));
   }
 
+  inline void alias_command(command_id new_parent_scope, std::string_view name,
+                            command_id existing)
+  {
+    auto&   old_parent = blocks_[existing.first];
+    handler h;
+    for (auto& e : old_parent.events_)
+    {
+      if (e.second.iid_ == existing.second)
+      {
+        h = e.second;
+        break;
+      }
+    }
+    blocks_[new_parent_scope.first].events_[name] = h;
+  }
   /// Alias the behaviour of an already registered command with a new
   /// command path. Path starts with region name.
   /// For example:
@@ -137,7 +154,7 @@ public:
 
   {
     std::uint32_t par_block = find_parent_block(src_path);
-    if (par_block == k_invalid_id)
+    if (par_block & k_np_id_mask)
       return;
     std::uint32_t dst_block              = build_parent_block(dst_path);
     blocks_[dst_block].events_[dst_path] = blocks_[par_block].events_[src_path];
@@ -167,13 +184,15 @@ private:
       command_end_hook end = nullptr) noexcept
 
   {
-    assert(parent_scope < blocks_.size());
-    std::uint32_t id = 0xffffffff;
+    assert(parent_scope.first < blocks_.size());
+    std::uint32_t iid = k_np_id_mask;
+    std::uint32_t id  = 0xffffffff;
     if (is_scoped)
     {
+      iid = 0;
       if (cmd == "*")
       {
-        id = parent_scope;
+        id = parent_scope.first;
       }
       else
       {
@@ -182,12 +201,13 @@ private:
       }
       blocks_[id].end_ = end;
     }
-    auto& block_ref = blocks_[parent_scope];
+    auto& block_ref = blocks_[parent_scope.first];
+    iid |= static_cast<std::uint32_t>(block_ref.events_.size());
     if (cmd == "*")
       block_ref.any_ = callback;
     else
-      block_ref.events_[cmd] = handler(callback, id);
-    return id;
+      block_ref.events_[cmd] = handler(callback, id, iid);
+    return std::make_pair(id, iid);
   }
 
   inline std::uint32_t find_parent_block(
@@ -241,7 +261,7 @@ private:
       auto it = blocks_[root].events_.find(ss);
       if (it == blocks_[root].events_.end())
       {
-        root = internal_add_command(root, ss);
+        root = internal_add_command(command_id{root, 0}, ss).first;
       }
       else
       {
@@ -261,3 +281,74 @@ private:
 };
 
 } // namespace neo
+
+//// Macro helpers
+#define neo_tp_(FnName, Ext) FnName##Ext
+#define neo_tp(FnName, Ext)  neo_tp_(FnName, Ext)
+#define neo_cmd_handler(FnName, Ty, iObj, iState, iCmd)                        \
+  neo::retcode neo_tp(call_, FnName)(                                          \
+      [[maybe_unused]] Ty & iObj,                                              \
+      [[maybe_unused]] neo::state_machine const& iState,                       \
+      [[maybe_unused]] neo::command const&       iCmd) noexcept;                     \
+  neo::retcode neo_tp(cmd_, FnName)(neo::command_handler * iObj,               \
+                                    neo::state_machine const& iState,          \
+                                    neo::command const&       iCmd) noexcept         \
+  {                                                                            \
+    return neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, iCmd);       \
+  }                                                                            \
+  neo::retcode neo_tp(call_, FnName)(                                          \
+      [[maybe_unused]] Ty & iObj,                                              \
+      [[maybe_unused]] neo::state_machine const& iState,                       \
+      [[maybe_unused]] neo::command const&       iCmd) noexcept
+
+#define neo_cmdend_handler(FnName, Ty, iObj, iState, iName)                    \
+  void neo_tp(call_,                                                           \
+              FnName)([[maybe_unused]] Ty & iObj,                              \
+                      [[maybe_unused]] neo::state_machine const& iState,       \
+                      [[maybe_unused]] std::string_view iName) noexcept;       \
+  void neo_tp(cmd_, FnName)(neo::command_handler * iObj,                       \
+                            neo::state_machine const& iState,                  \
+                            std::string_view          iName) noexcept                   \
+  {                                                                            \
+    neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, iName);             \
+  }                                                                            \
+  void neo_tp(call_,                                                           \
+              FnName)([[maybe_unused]] Ty & iObj,                              \
+                      [[maybe_unused]] neo::state_machine const& iState,       \
+                      [[maybe_unused]] std::string_view          iName) noexcept
+
+#define neo_text_handler(FnName, Ty, iObj, iState, iType, iName, iContent)     \
+  void neo_tp(call_,                                                           \
+              FnName)([[maybe_unused]] Ty & iObj,                              \
+                      [[maybe_unused]] neo::state_machine const& iState,       \
+                      [[maybe_unused]] std::string&&             iType,        \
+                      [[maybe_unused]] std::string_view          iName,        \
+                      [[maybe_unused]] std::string_view          iContent);             \
+  void neo_tp(cmd_, FnName)(                                                   \
+      neo::command_handler * iObj, neo::state_machine const& iState,           \
+      std::string&& iType, std::string_view iName, std::string_view iContent)  \
+  {                                                                            \
+    neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, std::move(iType),   \
+                          iName, iContent);                                    \
+  }                                                                            \
+  void neo_tp(call_,                                                           \
+              FnName)([[maybe_unused]] Ty & iObj,                              \
+                      [[maybe_unused]] neo::state_machine const& iState,       \
+                      [[maybe_unused]] std::string&&             iType,        \
+                      [[maybe_unused]] std::string_view          iName,        \
+                      [[maybe_unused]] std::string_view          iContent)
+
+#define neo_star_handler(FnName, Ty, iObj, iState, iCmd)                       \
+  neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
+
+#define neo_registry(name)                                                     \
+  void neo_tp(registry_, name)(neo::registry & r, std::uint32_t p = 0)
+
+#define neo_star(name) r.add_command(p, "*", neo_tp(neo_tp(cmd_, name), _star))
+#define neo_cmd(name)  r.add_command(p, #name, neo_tp(cmd_, name))
+#define neo_scope(name)                                                        \
+  if (std::uint32_t p =                                                        \
+          r.add_scoped_command(p, #name, neo_tp(cmd_, name), nullptr))
+#define neo_blk(name)                                                          \
+  if (std::uint32_t p = r.add_scoped_command(p, #name, neo_tp(cmd_, name),     \
+                                             neo_tp(cmd_, name)))

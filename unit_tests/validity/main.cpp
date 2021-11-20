@@ -115,7 +115,7 @@ TEST_CASE("Validate syntax files", "[file]")
   namespace fs = std::filesystem;
 
   neo::registry test_interpreter;
-  std::uint32_t root = test_interpreter.ensure_region_root("");
+  auto root = test_interpreter.ensure_region_root("");
   test_interpreter.add_scoped_command(
       root, "*", &fileout_command_handler::print_enter_scope,
       &fileout_command_handler::leave_scope);

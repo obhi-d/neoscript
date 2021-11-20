@@ -157,6 +157,24 @@ public:
     params_.resolve(stack);
   }
 
+  
+  inline static std::string_view const& as_string(
+      parameters const& source, std::string_view default_val = "",
+      std::uint32_t pref_index = 0) noexcept
+  {
+    auto const& p_source = source.value();
+    if (pref_index < p_source.size())
+    {
+      auto& source = p_source[pref_index];
+      switch (source.index())
+      {
+      case 1:
+        return std::get<1>(source).value();
+      }
+    }
+    return default_val;
+  }
+
 private:
   std::string_view name_;
   parameters       params_;
