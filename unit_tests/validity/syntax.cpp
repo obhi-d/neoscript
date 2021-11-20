@@ -404,6 +404,7 @@ neo_star_handler(example1, null_h, o, s, c)
 
 neo_registry(test) 
 { 
+  neo::command_id save;
   neo_cmd(example1);
   neo_scope_def(example1)
   {
@@ -413,10 +414,15 @@ neo_registry(test)
   }
   neo_scope_auto(example1)
   { 
+    neo_save_scope(save);
     neo_cmd(example1);
     neo_alias("@/example1/example1", "@/example1/example1/example1");
     neo_aliasid(parent_cmd_id, "example2", current_cmd_id);
   }
+  neo_subalias_def(example1, save);
+  neo_subalias_auto(example1, save);
+  neo_subalias_cust(example1, example1, save);
+
   neo_scope_cust(example1, example1)
   {
     neo_cmd(example1);

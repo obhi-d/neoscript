@@ -397,9 +397,17 @@ private:
 #define neo_scope_cust(name, end)                                              \
   neo_scope_safe_(name, neo_tp(save_, __LINE__), end)
 
-#define neo_subalias(name, end, sub)                                           \
+#define neo_subalias_def(name, sub)                                           \
   current_cmd_id = r.add_scoped_handler_alias(                                 \
-      parent_cmd_id, #name, neo_tp(cmd_, name), neo_tp(cmdend_, end), sub)
+      parent_cmd_id, #name, sub, neo_tp(cmd_, name), nullptr)
+
+#define neo_subalias_auto(name, sub)                                            \
+  current_cmd_id = r.add_scoped_handler_alias(parent_cmd_id, #name, sub,       \
+                                              neo_tp(cmd_, name), neo_tp(cmdend_, name))
+
+#define neo_subalias_cust(name, end, sub)                                           \
+  current_cmd_id = r.add_scoped_handler_alias(                                 \
+      parent_cmd_id, #name, sub, neo_tp(cmd_, name), neo_tp(cmdend_, end))
 
 #define neo_fn(name)    neo_tp(cmd_, name)
 #define neo_fnend(name) neo_tp(cmdend_, name)
