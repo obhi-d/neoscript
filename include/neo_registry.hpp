@@ -374,23 +374,27 @@ private:
 #define neo_cmd(name)                                                          \
   current_cmd_id = r.add_command(parent_cmd_id, #name, neo_tp(cmd_, name))
 
-#define neo_scope_null_(name, v)                                               \
+#define neo_scope_fn_(name)                                                    \
   current_cmd_id = parent_cmd_id;                                              \
   if (auto parent_cmd_id = r.add_scoped_command(current_cmd_id, #name,         \
                                                 neo_tp(cmd_, name), nullptr))
+#define neo_scope_null_(name)                                                  \
+  current_cmd_id = parent_cmd_id;                                              \
+  if (auto parent_cmd_id =                                                     \
+          r.add_scoped_command(current_cmd_id, #name, nullptr, nullptr))
 
-#define neo_scope_safe_(name, v, end)                                          \
+#define neo_scope_safe_(name, end)                                             \
   current_cmd_id = parent_cmd_id;                                              \
   if (auto parent_cmd_id = r.add_scoped_command(                               \
           current_cmd_id, #name, neo_tp(cmd_, name), neo_tp(cmdend_, end)))
 
-#define neo_scope_def(name) neo_scope_null_(name, neo_tp(save_, __LINE__))
+#define neo_scope_null(name) neo_scope_null_(name)
 
-#define neo_scope_auto(name)                                                   \
-  neo_scope_safe_(name, neo_tp(save_, __LINE__), name)
+#define neo_scope_def(name) neo_scope_fn_(name)
 
-#define neo_scope_cust(name, end)                                              \
-  neo_scope_safe_(name, neo_tp(save_, __LINE__), end)
+#define neo_scope_auto(name) neo_scope_safe_(name, name)
+
+#define neo_scope_cust(name, end) neo_scope_safe_(name, end)
 
 #define neo_subalias_def(name, sub)                                            \
   current_cmd_id = r.add_scoped_handler_alias(parent_cmd_id, #name, sub,       \
