@@ -9,13 +9,13 @@
 #ifdef NEO_DYN_LIB_
 #if defined _WIN32 || defined __CYGWIN__
 # ifdef NEO_EXPORT_
-#   ifdef __GNUC__
+# if defined(__GNUC__) || defined(__clang__)
 #     define NEO_API __attribute__((dllexport))
 #   else
 #     define NEO_API __declspec(dllexport)
 #   endif
 # else
-#   ifdef __GNUC__
+#   if defined(__GNUC__) || defined(__clang__)
 #     define NEO_API __attribute__((dllimport))
 #   else
 #     define NEO_API __declspec(dllimport)
@@ -32,6 +32,12 @@
 #endif
 #else
 # define NEO_API
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+# define NEO_FORCEINLINE inline __attribute__((always_inline))
+#else
+# define NEO_FORCEINLINE __forceinline
 #endif
 
 namespace neo

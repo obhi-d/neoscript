@@ -313,7 +313,7 @@ private:
 #define neo_tp_(FnName, Ext) FnName##Ext
 #define neo_tp(FnName, Ext)  neo_tp_(FnName, Ext)
 #define neo_cmd_handler(FnName, Ty, iObj, iState, iCmd)                        \
-  neo::retcode neo_tp(call_, FnName)(                                          \
+  NEO_FORCEINLINE neo::retcode neo_tp(call_, FnName)(                          \
       [[maybe_unused]] Ty & iObj,                                              \
       [[maybe_unused]] neo::state_machine const& iState,                       \
       [[maybe_unused]] neo::command const&       iCmd) noexcept;                     \
@@ -329,10 +329,10 @@ private:
       [[maybe_unused]] neo::command const&       iCmd) noexcept
 
 #define neo_cmdend_handler(FnName, Ty, iObj, iState, iName)                    \
-  void neo_tp(callend_,                                                        \
-              FnName)([[maybe_unused]] Ty & iObj,                              \
-                      [[maybe_unused]] neo::state_machine const& iState,       \
-                      [[maybe_unused]] std::string_view iName) noexcept;       \
+  NEO_FORCEINLINE void neo_tp(callend_, FnName)(                               \
+      [[maybe_unused]] Ty & iObj,                                              \
+      [[maybe_unused]] neo::state_machine const& iState,                       \
+      [[maybe_unused]] std::string_view          iName) noexcept;                       \
   void neo_tp(cmdend_, FnName)(neo::command_handler * iObj,                    \
                                neo::state_machine const& iState,               \
                                std::string_view          iName) noexcept                \
@@ -345,12 +345,12 @@ private:
                       [[maybe_unused]] std::string_view          iName) noexcept
 
 #define neo_text_handler(FnName, Ty, iObj, iState, iType, iName, iContent)     \
-  void neo_tp(call_,                                                           \
-              FnName)([[maybe_unused]] Ty & iObj,                              \
-                      [[maybe_unused]] neo::state_machine const& iState,       \
-                      [[maybe_unused]] std::string&&             iType,        \
-                      [[maybe_unused]] std::string_view          iName,        \
-                      [[maybe_unused]] std::string_view          iContent);             \
+  NEO_FORCEINLINE void neo_tp(call_, FnName)(                                  \
+      [[maybe_unused]] Ty & iObj,                                              \
+      [[maybe_unused]] neo::state_machine const& iState,                       \
+      [[maybe_unused]] std::string&&             iType,                        \
+      [[maybe_unused]] std::string_view          iName,                        \
+      [[maybe_unused]] std::string_view          iContent);                             \
   void neo_tp(cmd_, FnName)(                                                   \
       neo::command_handler * iObj, neo::state_machine const& iState,           \
       std::string&& iType, std::string_view iName, std::string_view iContent)  \
@@ -392,15 +392,15 @@ private:
 #define neo_scope_cust(name, end)                                              \
   neo_scope_safe_(name, neo_tp(save_, __LINE__), end)
 
-#define neo_subalias_def(name, sub)                                           \
-  current_cmd_id = r.add_scoped_handler_alias(                                 \
-      parent_cmd_id, #name, sub, neo_tp(cmd_, name), nullptr)
-
-#define neo_subalias_auto(name, sub)                                            \
+#define neo_subalias_def(name, sub)                                            \
   current_cmd_id = r.add_scoped_handler_alias(parent_cmd_id, #name, sub,       \
-                                              neo_tp(cmd_, name), neo_tp(cmdend_, name))
+                                              neo_tp(cmd_, name), nullptr)
 
-#define neo_subalias_cust(name, end, sub)                                           \
+#define neo_subalias_auto(name, sub)                                           \
+  current_cmd_id = r.add_scoped_handler_alias(                                 \
+      parent_cmd_id, #name, sub, neo_tp(cmd_, name), neo_tp(cmdend_, name))
+
+#define neo_subalias_cust(name, end, sub)                                      \
   current_cmd_id = r.add_scoped_handler_alias(                                 \
       parent_cmd_id, #name, sub, neo_tp(cmd_, name), neo_tp(cmdend_, end))
 
