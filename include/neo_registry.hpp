@@ -348,7 +348,7 @@ private:
   NEO_FORCEINLINE void neo_tp(call_, FnName)(                                  \
       [[maybe_unused]] Ty & iObj,                                              \
       [[maybe_unused]] neo::state_machine const& iState,                       \
-      [[maybe_unused]] std::string&&             iType,                        \
+      [[maybe_unused]] std::string_view          iType,                        \
       [[maybe_unused]] std::string_view          iName,                        \
       [[maybe_unused]] std::string_view          iContent);                             \
   void neo_tp(cmd_, FnName)(                                                   \
