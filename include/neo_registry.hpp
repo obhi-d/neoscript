@@ -351,9 +351,10 @@ private:
       [[maybe_unused]] std::string_view          iType,                        \
       [[maybe_unused]] std::string_view          iName,                        \
       [[maybe_unused]] std::string_view          iContent);                             \
-  void neo_tp(cmd_, FnName)(                                                   \
-      neo::command_handler * iObj, neo::state_machine const& iState,           \
-      std::string&& iType, std::string_view iName, std::string_view iContent)  \
+  void neo_tp(cmd_, FnName)(neo::command_handler * iObj,                       \
+                            neo::state_machine const& iState,                  \
+                            std::string_view iType, std::string_view iName,    \
+                            std::string_view iContent)                         \
   {                                                                            \
     neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, std::move(iType),   \
                           iName, iContent);                                    \
