@@ -350,21 +350,21 @@ private:
       [[maybe_unused]] neo::state_machine const& iState,                       \
       [[maybe_unused]] std::string_view          iType,                        \
       [[maybe_unused]] std::string_view          iName,                        \
-      [[maybe_unused]] std::string_view          iContent);                             \
+      [[maybe_unused]] neo::text_content&&       iContent) noexcept;                          \
   void neo_tp(cmd_, FnName)(neo::command_handler * iObj,                       \
-                            neo::state_machine const& iState,                  \
+                            neo::state_machine const& iState,       \
                             std::string_view iType, std::string_view iName,    \
-                            std::string_view iContent)                         \
+                            neo::text_content&& iContent) noexcept                    \
   {                                                                            \
-    neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, std::move(iType),   \
-                          iName, iContent);                                    \
+    neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, iType, iName,       \
+                          std::move(iContent));                                \
   }                                                                            \
   void neo_tp(call_,                                                           \
               FnName)([[maybe_unused]] Ty & iObj,                              \
                       [[maybe_unused]] neo::state_machine const& iState,       \
-                      [[maybe_unused]] std::string&&             iType,        \
+                      [[maybe_unused]] std::string_view          iType,        \
                       [[maybe_unused]] std::string_view          iName,        \
-                      [[maybe_unused]] std::string_view          iContent)
+                      [[maybe_unused]] neo::text_content&& iContent) noexcept
 
 #define neo_star_handler(FnName, Ty, iObj, iState, iCmd)                       \
   neo_cmd_handler(neo_tp(FnName, _star), Ty, iObj, iState, iCmd)
@@ -423,3 +423,4 @@ private:
                                neo::command_id current_cmd_id = {})
 
 #define neo_register(name, reg) neo_tp(register_, name)(reg)
+#define neo_handle_text(name)   r.set_text_region_handler(neo_tp(cmd_, name))

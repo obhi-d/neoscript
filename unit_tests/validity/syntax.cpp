@@ -405,6 +405,7 @@ neo_star_handler(example1, null_h, o, s, c)
 neo_registry(test) 
 { 
   neo::command_id save;
+  neo_handle_text(example2);
   neo_cmd(example1);
   neo_scope_def(example1)
   {
