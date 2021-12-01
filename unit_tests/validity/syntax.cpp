@@ -383,7 +383,177 @@ TEST_CASE("Skip test rest of commands", "[skip2]")
   REQUIRE(h.inner_call == 1);
 }
 
+TEST_CASE("Skip test end of commands", "[skip3]")
+{
+  neo::registry reg;
+  std::string   test = "simple skip \n"
+                     "{ \n"
+                     "  allow next; \n"
+                     "  inner command { accept Print; } \n"
+                     "  inner command {} \n"
+                     "  inner {} \n"
+                     "  command next; \n"
+                     "  inner { echo strength; echo peace; } \n"
+                     "}\n"
+                     "simple {}\n"
+                     "simple {\n"
+                     "  inner command { accept Print; } \n"
+                     "}\n";
 
+
+  auto root  = reg.ensure_region_root("");
+  
+  struct handler : neo::command_handler
+  {
+    int inner_call = 0;
+    int simple_call = 0;
+    int accept_call = 0;
+  };
+  handler h;
+  auto    scope = reg.add_scoped_command(
+      root, "simple",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      {
+        static_cast<handler*>(_)->simple_call++;
+        return neo::retcode::e_success;
+      });
+
+  auto scope2 = reg.add_scoped_command(scope, "inner",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    static_cast<handler*>(_)->inner_call++;
+                    return neo::retcode::e_success;
+                  },
+      [](neo::command_handler* obj, neo::state_machine const&,
+         std::string_view cmd_name) noexcept -> neo::retcode
+      {
+        static_cast<handler*>(obj)->inner_call++;
+        return neo::retcode::e_skip_rest;
+      });
+  
+  reg.add_command(scope, "allow",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  { return neo::retcode::e_success; });
+  
+  reg.add_command(scope2, "accept",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    static_cast<handler*>(_)->accept_call++;
+                    return neo::retcode::e_success;
+                  });
+
+  reg.add_command(scope2, "echo",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    std::cout << "Failed!";
+                    return neo::retcode::e_fail_and_stop;
+                  });
+
+  reg.add_command(scope, "command",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    std::cout << "Failed!";
+                    return neo::retcode::e_fail_and_stop;
+                  });
+
+  neo::state_machine state_machine(reg, &h, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(h.inner_call == 4);
+  REQUIRE(h.accept_call == 2);
+  REQUIRE(h.simple_call == 3);
+}
+
+TEST_CASE("Stop test end of commands", "[stop]")
+{
+  neo::registry reg;
+  std::string   test = "simple skip \n"
+                     "{ \n"
+                     "  allow next; \n"
+                     "  inner command { accept Print; } \n"
+                     "  inner command {} \n"
+                     "  inner {} \n"
+                     "  command next; \n"
+                     "  inner { echo strength; echo peace; } \n"
+                     "}\n"
+                     "simple {}\n"
+                     "simple {}\n";
+
+  auto root = reg.ensure_region_root("");
+
+  struct handler : neo::command_handler
+  {
+    int inner_call  = 0;
+    int simple_call = 0;
+    int accept_call = 0;
+  };
+  handler h;
+  auto    scope = reg.add_scoped_command(
+      root, "simple",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      {
+        static_cast<handler*>(_)->simple_call++;
+        return neo::retcode::e_success;
+      });
+
+  auto scope2 = reg.add_scoped_command(
+      scope, "inner",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      {
+        static_cast<handler*>(_)->inner_call++;
+        return neo::retcode::e_success;
+      },
+      [](neo::command_handler* obj, neo::state_machine const&,
+         std::string_view      cmd_name) noexcept -> neo::retcode
+      {
+        static_cast<handler*>(obj)->inner_call++;
+        return neo::retcode::e_success_stop;
+      });
+
+  reg.add_command(scope, "allow",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  { return neo::retcode::e_success; });
+
+  reg.add_command(scope2, "accept",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    static_cast<handler*>(_)->accept_call++;
+                    return neo::retcode::e_success;
+                  });
+
+  reg.add_command(scope2, "echo",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    std::cout << "Failed!";
+                    return neo::retcode::e_fail_and_stop;
+                  });
+
+  reg.add_command(scope, "command",
+                  [](neo::command_handler* _, neo::state_machine const& ctx,
+                     neo::command const& cmd) noexcept -> neo::retcode
+                  {
+                    std::cout << "Failed!";
+                    return neo::retcode::e_fail_and_stop;
+                  });
+
+  neo::state_machine state_machine(reg, &h, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(h.inner_call == 2);
+  REQUIRE(h.accept_call == 1);
+  REQUIRE(h.simple_call == 1);
+}
 // Macro compilation test
 struct null_h : neo::command_handler
 {
@@ -395,7 +565,9 @@ neo_cmd_handler(example1, null_h, obj, state, cmd)
 }
 
 neo_cmdend_handler(example1, null_h, obj, state, cmd) 
-{}
+{
+  return neo::retcode::e_success;
+}
 
 neo_text_handler(example2, null_h, obj, state, type, name, ctx) {}
 

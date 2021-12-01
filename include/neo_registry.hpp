@@ -17,10 +17,13 @@ enum class retcode
 {
   e_success = 0,
   e_success_stop,
-  e_skip_block,   // for blocked commands, skip this block to next one
-  e_skip_rest,    // skip the rest of the commands in current block, and do not
-                  // enter the current command if its a block command
-  e_fail_and_stop // stop parsing any further
+  // for blocked commands, skip this block to next one
+  e_skip_block,   
+  // skip the rest of the commands in current block, and do not
+  // enter the current command if its a block command
+  e_skip_rest,    
+  // stop parsing any further
+  e_fail_and_stop 
 };
 
 struct command_handler
@@ -35,7 +38,7 @@ using command_hook = neo::retcode (*)(command_handler* obj,
                                       neo::command const&) noexcept;
 //
 // @remarks Command hook that is executed at the end of the command
-using command_end_hook = void (*)(
+using command_end_hook = neo::retcode (*)(
     command_handler* obj, neo::state_machine const&,
     std::string_view cmd_name) noexcept; // scope_name is "" at end of scope
 
@@ -329,20 +332,20 @@ private:
       [[maybe_unused]] neo::command const&       iCmd) noexcept
 
 #define neo_cmdend_handler(FnName, Ty, iObj, iState, iName)                    \
-  NEO_FORCEINLINE void neo_tp(callend_, FnName)(                               \
+  NEO_FORCEINLINE neo::retcode neo_tp(callend_, FnName)(                       \
       [[maybe_unused]] Ty & iObj,                                              \
       [[maybe_unused]] neo::state_machine const& iState,                       \
       [[maybe_unused]] std::string_view          iName) noexcept;                       \
-  void neo_tp(cmdend_, FnName)(neo::command_handler * iObj,                    \
-                               neo::state_machine const& iState,               \
-                               std::string_view          iName) noexcept                \
+  neo::retcode neo_tp(cmdend_, FnName)(neo::command_handler * iObj,            \
+                                       neo::state_machine const& iState,       \
+                                       std::string_view          iName) noexcept        \
   {                                                                            \
-    neo_tp(callend_, FnName)(static_cast<Ty&>(*iObj), iState, iName);          \
+    return neo_tp(callend_, FnName)(static_cast<Ty&>(*iObj), iState, iName);   \
   }                                                                            \
-  void neo_tp(callend_,                                                        \
-              FnName)([[maybe_unused]] Ty & iObj,                              \
-                      [[maybe_unused]] neo::state_machine const& iState,       \
-                      [[maybe_unused]] std::string_view          iName) noexcept
+  neo::retcode neo_tp(callend_, FnName)(                                       \
+      [[maybe_unused]] Ty & iObj,                                              \
+      [[maybe_unused]] neo::state_machine const& iState,                       \
+      [[maybe_unused]] std::string_view          iName) noexcept
 
 #define neo_text_handler(FnName, Ty, iObj, iState, iType, iName, iContent)     \
   NEO_FORCEINLINE void neo_tp(call_, FnName)(                                  \
@@ -350,11 +353,11 @@ private:
       [[maybe_unused]] neo::state_machine const& iState,                       \
       [[maybe_unused]] std::string_view          iType,                        \
       [[maybe_unused]] std::string_view          iName,                        \
-      [[maybe_unused]] neo::text_content&&       iContent) noexcept;                          \
+      [[maybe_unused]] neo::text_content&&       iContent) noexcept;                 \
   void neo_tp(cmd_, FnName)(neo::command_handler * iObj,                       \
-                            neo::state_machine const& iState,       \
+                            neo::state_machine const& iState,                  \
                             std::string_view iType, std::string_view iName,    \
-                            neo::text_content&& iContent) noexcept                    \
+                            neo::text_content&& iContent) noexcept             \
   {                                                                            \
     neo_tp(call_, FnName)(static_cast<Ty&>(*iObj), iState, iType, iName,       \
                           std::move(iContent));                                \

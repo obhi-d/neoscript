@@ -35,11 +35,12 @@ struct fileout_command_handler : public neo::command_handler
       return result;
   }
 
-  static void leave_scope(neo::command_handler*     _,
+  static neo::retcode leave_scope(neo::command_handler*     _,
                           neo::state_machine const& ctx,
                           std::string_view          name) noexcept
   {
     static_cast<fileout_command_handler*>(_)->leave_scope_m(ctx, name);
+    return neo::retcode::e_success;
   }
 
   neo::retcode print_m(neo::state_machine const& ctx, neo::command const& cmd)

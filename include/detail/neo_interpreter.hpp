@@ -12,13 +12,14 @@ class interpreter
 public:
   static auto constexpr k_invalid_id = neo::registry::k_invalid_id;
 
-  static inline void end_scope(neo::registry const& reg,
+  static inline [[nodiscard]] retcode end_scope(neo::registry const& reg,
                                neo::state_machine& ctx, command_handler* obj,
                                std::uint32_t    block,
                                std::string_view scope_id) noexcept 
   {
     if (reg.blocks_[block].end_)
-      std::invoke(reg.blocks_[block].end_, obj, ctx, scope_id);
+      return std::invoke(reg.blocks_[block].end_, obj, ctx, scope_id);
+    return retcode::e_success;
   }
 
   static inline std::tuple<std::uint32_t, neo::retcode> execute(

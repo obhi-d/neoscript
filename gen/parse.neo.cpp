@@ -784,7 +784,7 @@ namespace neo {
     break;
 
   case 8: // statement: "}"
-                                                         { if (!_.skip()) _.end_block(); else _.exit_skip_scope();              }
+                                                         { if (!_.skip()) { if(!_.end_block()) YYACCEPT; } else _.exit_skip_scope();          }
     break;
 
   case 9: // statement: REGION_ID

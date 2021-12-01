@@ -45,7 +45,7 @@ public:
   void record_template(neo::command_template&) noexcept;
   void remove_template(std::string_view) noexcept;
   bool consume(neo::command_instance&&) noexcept;
-  void end_block() noexcept;
+  bool end_block() noexcept;
   void start_region(std::string_view region_id,
                     text_content&& content) noexcept;
   void import_script(std::string_view file_id) noexcept;
@@ -169,8 +169,15 @@ public:
 
   bool skip() const noexcept { return skip_ > 0; }
 
-  void         enter_skip_scope() noexcept { skip_++; }
-  std::int32_t exit_skip_scope() noexcept { return --skip_; }
+  void         enter_skip_scope() noexcept 
+  {
+    skip_++; 
+  }
+  
+  std::int32_t exit_skip_scope() noexcept 
+  {
+    return --skip_; 
+  }
 
   inline void start_read_len(int len) noexcept { len_reading_ = len; }
 

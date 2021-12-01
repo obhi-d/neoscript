@@ -88,7 +88,7 @@ statement:
 		| commanddecl                            { if (!_.skip()) { if(!_.consume(std::move($1))) { YYACCEPT; }   }     }
 		| templatedecl                           { if (!_.skip()) _.add_template(std::move($1));                        }
 		| instancedecl                           { if (!_.skip()) { if(!_.consume(std::move($1))) { YYACCEPT; }   }     }
-		| RBRACKET                               { if (!_.skip()) _.end_block(); else _.exit_skip_scope();              }
+		| RBRACKET                               { if (!_.skip()) { if(!_.end_block()) YYACCEPT; } else _.exit_skip_scope();          }
 		| REGION_ID                              { _.start_region(std::move($1));                                       }
 		| TEXT_REGION_ID TEXT_CONTENTS           { _.start_region(std::move($1), std::move($2));                        }
 		| IMPORT STRING_LITERAL SEMICOLON        { 
