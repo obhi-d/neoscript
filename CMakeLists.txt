@@ -24,6 +24,7 @@ add_custom_command(
 		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
         "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
 
+   COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Copying parser files"
    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
    COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
    DEPENDS 
@@ -37,6 +38,8 @@ else(NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
+		
+	 COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Building parser"
      COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
 	 COMMAND ${NEOSCRIPT_BISON} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" --no-lines "${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
      COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen"
@@ -46,6 +49,8 @@ add_custom_command(
 add_custom_command( 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
+	
+     COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Building lexers"	
 	 COMMAND ${NEOSCRIPT_FLEX} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
      COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" "${PROJECT_SOURCE_DIR}/gen"
 	 DEPENDS 
