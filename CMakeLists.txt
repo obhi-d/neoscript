@@ -86,8 +86,7 @@ if (NEOSCRIPT_HEADER_ONLY)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "/Zc:__cplusplus")
   endif()
-  target_link_libraries(${NEOSCRIPT_TARGET_NAME} INTERFACE ${NEOSCRIPT_TARGET_NAME}.PreBuild)
-
+  
 elseif (NEOSCRIPT_BUILD_STATIC)
 
   add_library(${NEOSCRIPT_TARGET_NAME} STATIC
@@ -202,9 +201,9 @@ install(DIRECTORY include DESTINATION .)
 
 if (NEOSCRIPT_HEADER_ONLY)
 install(FILES 
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
+    "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp"
+    "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp"
+    "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp"
     "${PROJECT_SOURCE_DIR}/src/neo_command_instance.cpp"
     "${PROJECT_SOURCE_DIR}/src/neo_command_template.cpp"
     "${PROJECT_SOURCE_DIR}/src/neo_state_machine.cpp"
