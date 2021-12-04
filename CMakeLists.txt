@@ -86,6 +86,7 @@ if (NEOSCRIPT_HEADER_ONLY)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
     target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "/Zc:__cplusplus")
   endif()
+  target_link_libraries(${NEOSCRIPT_TARGET_NAME} INTERFACE ${NEOSCRIPT_TARGET_NAME}.PreBuild)
 
 elseif (NEOSCRIPT_BUILD_STATIC)
 
