@@ -201,7 +201,7 @@ install(DIRECTORY include DESTINATION .)
 
 if (NEOSCRIPT_HEADER_ONLY)
 install(FILES 
-    "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp"
+    "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp"
     "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp"
     "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp"
     "${PROJECT_SOURCE_DIR}/src/neo_command_instance.cpp"
