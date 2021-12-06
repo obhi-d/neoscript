@@ -23,11 +23,11 @@ add_custom_command(
 
 	OUTPUT 
 		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
-        "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
 
    COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Copying parser files"
    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
-   COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
+   COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/detail/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
 
    DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
@@ -44,7 +44,7 @@ add_custom_command(
 	 COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Building parser"
    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
 	 COMMAND ${NEOSCRIPT_BISON} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" --no-lines "${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen"
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/detail"
 
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
@@ -56,7 +56,7 @@ add_custom_command(
 	
    COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Building lexers"	
 	 COMMAND ${NEOSCRIPT_FLEX} -o "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" -L "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" "${PROJECT_SOURCE_DIR}/gen"
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/detail"
 
 	 DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
@@ -84,7 +84,8 @@ if (NEOSCRIPT_HEADER_ONLY)
     ${NEOSCRIPT_TARGET_NAME}
      INTERFACE 
       $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
-      $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}>
+      $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/gen>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
@@ -96,9 +97,9 @@ else() # LIB
   message("nescript is built as lib")
 
 set(NEOSCRIPT_SOURCES 
-    "src/neo_state_machine.cpp"
-    "src/neo_command_instance.cpp"
-    "src/neo_command_template.cpp"
+    "src/detail/neo_state_machine.cpp"
+    "src/detail/neo_command_instance.cpp"
+    "src/detail/neo_command_template.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp")
 
@@ -178,11 +179,11 @@ install(DIRECTORY include DESTINATION .)
 
 if (NEOSCRIPT_HEADER_ONLY)
 install(FILES 
-    "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp"
-    "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp"
-    "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp"
-    "${PROJECT_SOURCE_DIR}/src/neo_command_instance.cpp"
-    "${PROJECT_SOURCE_DIR}/src/neo_command_template.cpp"
-    "${PROJECT_SOURCE_DIR}/src/neo_state_machine.cpp"
+    "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.cpp"
+    "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.hpp"
+    "${PROJECT_SOURCE_DIR}/gen/detail/lex.neo.cpp"
+    "${PROJECT_SOURCE_DIR}/src/detail/neo_command_instance.cpp"
+    "${PROJECT_SOURCE_DIR}/src/detail/neo_command_template.cpp"
+    "${PROJECT_SOURCE_DIR}/src/detail/neo_state_machine.cpp"
     DESTINATION include/detail)
 endif()
