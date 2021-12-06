@@ -82,6 +82,8 @@ if (NEOSCRIPT_HEADER_ONLY)
   target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}
     INTERFACE 
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:include>
   )
 
