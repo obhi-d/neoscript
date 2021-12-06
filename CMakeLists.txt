@@ -68,88 +68,57 @@ add_custom_target(
 ##
 ## TARGET
 ##
-message("Target name: ${NEOSCRIPT_TARGET_NAME}")
-
 if (NEOSCRIPT_HEADER_ONLY)
 
+  message("nescript is headeronly")
+
   add_library(${NEOSCRIPT_TARGET_NAME} INTERFACE)
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  )
-    
-  if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC )
-    target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "/Zc:__cplusplus")
-  endif()
   
-elseif (NEOSCRIPT_BUILD_STATIC)
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    INTERFACE 
+      $<INSTALL_INTERFACE:include>
+  )
 
-  add_library(${NEOSCRIPT_TARGET_NAME} STATIC
-    src/neo_state_machine.cpp
-    src/neo_command_instance.cpp
-    src/neo_command_template.cpp
+  target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
+  target_compile_features(${NEOSCRIPT_TARGET_NAME} INTERFACE cxx_std_20)
+  
+else() # LIB
+
+  message("nescript is built as lib")
+
+set(NEOSCRIPT_SOURCES 
+    "src/neo_state_machine.cpp"
+    "src/neo_command_instance.cpp"
+    "src/neo_command_template.cpp"
     "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
-  )
-  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  )
-  
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
-    target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "/Zc:__cplusplus")
-  endif()
+    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp")
 
+if (NEOSCRIPT_BUILD_STATIC)
+  add_library(${NEOSCRIPT_TARGET_NAME} STATIC ${NEOSCRIPT_SOURCES})
 else()
-
-  add_library(${NEOSCRIPT_TARGET_NAME} SHARED 
-    src/neo_state_machine.cpp
-    src/neo_command_instance.cpp
-    src/neo_command_template.cpp
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp"
-  )
-
+  add_library(${NEOSCRIPT_TARGET_NAME} SHARED ${NEOSCRIPT_SOURCES})
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PUBLIC NEO_DYN_LIB_)
   target_compile_definitions(${NEOSCRIPT_TARGET_NAME} PRIVATE NEO_EXPORT_)
-  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
-  
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_include_directories(
-    ${NEOSCRIPT_TARGET_NAME}
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  )
-
-  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" )
-    target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "/Zc:__cplusplus")
-  endif()
-
 endif()
 
+  target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
+  target_compile_features(${NEOSCRIPT_TARGET_NAME} PUBLIC cxx_std_20)
 
+  target_include_directories(
+    ${NEOSCRIPT_TARGET_NAME}
+    PUBLIC 
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>
+  )
+    
+if (NEOSCRIPT_USE_LIBCPP_CLANG)
+  target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "$<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>")
+  target_link_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "$<$<CXX_COMPILER_ID:Clang>:-stdlib=libc++>")
+endif(NEOSCRIPT_USE_LIBCPP_CLANG)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  if (NEOSCRIPT_USE_LIBCPP_CLANG)
-    target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "-stdlib=libc++")
-    target_link_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "-stdlib=libc++")
-  endif(NEOSCRIPT_USE_LIBCPP_CLANG)
 endif()
-
 
 add_dependencies(${NEOSCRIPT_TARGET_NAME} ${NEOSCRIPT_TARGET_NAME}.PreBuild)
 add_library(${PROJECT_NAME}::${NEOSCRIPT_TARGET_NAME} ALIAS ${NEOSCRIPT_TARGET_NAME})
@@ -165,8 +134,10 @@ if(BUILD_TESTING AND NEOSCRIPT_BUILD_TESTS)
     # Utility
     add_subdirectory(utility)
 endif()
-# INSTALL
 
+######################################
+# INSTALL
+######################################
 install(TARGETS ${PROJECT_NAME}
       EXPORT ${PROJECT_NAME}_Targets
        ARCHIVE DESTINATION lib
@@ -175,27 +146,25 @@ install(TARGETS ${PROJECT_NAME}
        )
 
 include(CMakePackageConfigHelpers)
+
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
                                  VERSION ${PROJECT_VERSION}
                                  COMPATIBILITY SameMajorVersion)
 
-if(DEFINED CMAKE_INSTALL_DATAROOTDIR)
-    configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    INSTALL_DESTINATION
-    ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
+configure_package_config_file(
+  "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+  INSTALL_DESTINATION
+    lib/cmake)
 
+install(EXPORT ${PROJECT_NAME}_Targets
+  FILE ${PROJECT_NAME}Targets.cmake
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION lib/cmake)
 
-    install(EXPORT ${PROJECT_NAME}_Targets
-    FILE ${PROJECT_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
-
-    install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-                "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
-endif()
+install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+              "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION lib/cmake)
 
 install(DIRECTORY include DESTINATION .)
 
