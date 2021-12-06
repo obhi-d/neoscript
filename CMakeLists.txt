@@ -14,8 +14,10 @@ set   (NEOSCRIPT_FLEX              "flex"                                       
 ##
 ## CONFIGURATION
 ##
-set(NEOSCRIPT_TARGET_NAME               ${PROJECT_NAME})
+set(NEOSCRIPT_TARGET_NAME       ${PROJECT_NAME})
 set(NEOSCRIPT_INCLUDE_BUILD_DIR "${PROJECT_SOURCE_DIR}/include")
+
+message("PROJECT IS : ${PROJECT_SOURCE_DIR}")
 
 if (NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
 
@@ -29,8 +31,7 @@ add_custom_command(
    COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
    DEPENDS 
 		"${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
-        "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
-
+    "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
  )
 
 else(NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
