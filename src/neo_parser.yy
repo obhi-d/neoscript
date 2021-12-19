@@ -80,7 +80,8 @@ YY_DECL;
 
 %%
 /*============================================================================*/
-script: statement           
+script: END
+    | statement           
 		| statement script      
 
 statement:                                   
