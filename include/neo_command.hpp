@@ -39,6 +39,7 @@ public:
         else
           return default_val;
       }
+      break;
       case 3:
         return std::get<3>(*p_source).value();
       }
