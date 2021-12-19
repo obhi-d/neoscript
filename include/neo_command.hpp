@@ -25,7 +25,7 @@ public:
     param_t const* p_source = &source;
     while (true)
     {
-      switch (source.index())
+      switch (p_source->index())
       {
       default:
         return default_val;
