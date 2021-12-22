@@ -70,6 +70,7 @@ add_custom_target(
   ${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp
 )
+include(GNUInstallDirs)
 ##
 ## TARGET
 ##
