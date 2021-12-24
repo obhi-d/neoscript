@@ -44,6 +44,7 @@ BLANK   [ \t]
 
 <<EOF>>  {
 	BEGIN(INITIAL); 
+	_.push_content(); 
 	return neo::parser_impl::make_TEXT_CONTENTS(std::move(_.retrieve_content()), _.loc()); 
 }
 

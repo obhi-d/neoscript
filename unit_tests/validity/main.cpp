@@ -78,6 +78,22 @@ struct fileout_command_handler : public neo::command_handler
     scope.erase(pos, scope.length() - pos);
   }
 
+  static void handle_text(neo::command_handler*     _,
+                          neo::state_machine const& ctx, std::string_view id,
+                          std::string_view    name,
+                          neo::text_content&& content) noexcept
+  {
+    return static_cast<fileout_command_handler*>(_)->print_text(id, name, content);
+  }
+
+  void print_text(std::string_view id, std::string_view name, neo::text_content const& content)
+  {
+    file << "\n-- text : " << id << " : " << name << "\n";
+    for (auto const& t : content.fragments)
+      file << t;
+    file << "\n-- text --\n";
+  }
+
   std::ofstream file;
   std::string   scope;
   std::string   last_cmd;
@@ -117,6 +133,10 @@ TEST_CASE("Validate syntax files", "[file]")
 
   neo::registry test_interpreter;
   auto root = test_interpreter.ensure_region_root("");
+
+  test_interpreter.set_text_region_handler(
+      &fileout_command_handler::handle_text);
+
   test_interpreter.add_scoped_command(
       root, "*", &fileout_command_handler::print_enter_scope,
       &fileout_command_handler::leave_scope);

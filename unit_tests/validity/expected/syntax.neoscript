@@ -15,6 +15,16 @@ comm5/comm7/comm8 --> ()
 comm5/comm7/comm8/multi_line_string --> (some multi line
 	string is added )
 comm9 --> ([[param1 = list, param2 = special], param1 = parameters, [param3 = are also possible]])
+
+-- text : text : atextreg
+
+So this is what was expected.
+Everything working. No big deal.
+Lets check if this actually works.
+
+Last line of operation.
+
+-- text --
 block --> (parameter0, parameter1)
 block/command --> (parameter2, parameter4)
 templ --> ()
