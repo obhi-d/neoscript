@@ -184,6 +184,7 @@ public:
   inline void read_len(int l) noexcept 
   { 
     len_reading_ += l; 
+    assert(current_file_[pos_commit_ + len_reading_ - 1] != 0);
   }
 
   inline int flush_read_len() noexcept

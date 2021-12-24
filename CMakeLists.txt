@@ -25,7 +25,7 @@ add_custom_command(
 		"${CMAKE_CURRENT_BINARY_DIR}/detail/parse.neo.cpp" 
     "${CMAKE_CURRENT_BINARY_DIR}/detail/lex.neo.cpp" 
 
-   COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Copying parser files"
+   COMMAND ${CMAKE_COMMAND} -E echo "neoscript: Copying parser files (pregenerated parsers)"
    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
    COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/detail/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
 

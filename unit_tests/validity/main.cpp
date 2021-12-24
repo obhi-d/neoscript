@@ -6,6 +6,7 @@
 #include <istream>
 #include <neo_script.hpp>
 #include <sstream>
+#include <streambuf>
 
 std::string to_string(neo::command::param_t const& param);
 
@@ -119,11 +120,8 @@ std::tuple<std::string, std::string> compare_expected(std::string const& name)
 std::string read_file(std::filesystem::path path)
 {
   std::ifstream t{path};
-  t.seekg(0, std::ios::end);
-  size_t      size = t.tellg();
-  std::string buffer(size, '\0');
-  t.seekg(0);
-  t.read(&buffer[0], size);
+  std::string   buffer((std::istreambuf_iterator<char>(t)),
+                  std::istreambuf_iterator<char>());
   return buffer;
 }
 

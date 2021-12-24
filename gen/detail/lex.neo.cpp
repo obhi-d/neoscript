@@ -1056,6 +1056,7 @@ YY_RULE_SETUP
 case YY_STATE_EOF(STATE_TEXT):
 {
 	BEGIN(INITIAL); 
+	  _.push_content(); 
 	return neo::parser_impl::make_TEXT_CONTENTS(std::move(_.retrieve_content()), _.loc()); 
 }
 	YY_BREAK

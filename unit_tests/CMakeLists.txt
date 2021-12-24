@@ -52,7 +52,7 @@ file(GLOB NEO_DATASET CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/
 file(GLOB NEO_EXPECTED CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected/*.neoscript)
 
 validity_test("cpp" "" "${NEO_COMMON_CXX_FLAGS}" "${NEO_COMMON_CXX_LINK_FLAGS}")
-add_custom_command(TARGET neotest-validity-cpp PRE_BUILD 
+add_custom_command(TARGET neotest-validity-cpp POST_BUILD 
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/dataset ${CMAKE_BINARY_DIR}/dataset
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected ${CMAKE_BINARY_DIR}/expected
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/output

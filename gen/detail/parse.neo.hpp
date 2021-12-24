@@ -32,7 +32,7 @@
 
 
 /**
- ** \file C:/repos/neoscript/out/build/x64-Debug/detail/parse.neo.hpp
+ ** \file C:/repos/neoscript/out/build/windows-default/detail/parse.neo.hpp
  ** Define the neo::parser class.
  */
 
@@ -42,8 +42,8 @@
 // especially those whose name start with YY_ or yy_.  They are
 // private implementation details that can be changed or removed.
 
-#ifndef YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_X64_DEBUG_DETAIL_PARSE_NEO_HPP_INCLUDED
-# define YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_X64_DEBUG_DETAIL_PARSE_NEO_HPP_INCLUDED
+#ifndef YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_WINDOWS_DEFAULT_DETAIL_PARSE_NEO_HPP_INCLUDED
+# define YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_WINDOWS_DEFAULT_DETAIL_PARSE_NEO_HPP_INCLUDED
 // "%code requires" blocks.
 
 #include <neo_state_machine.hpp>
@@ -1959,4 +1959,4 @@ switch (yykind)
 
 
 
-#endif // !YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_X64_DEBUG_DETAIL_PARSE_NEO_HPP_INCLUDED
+#endif // !YY_NEO_C_REPOS_NEOSCRIPT_OUT_BUILD_WINDOWS_DEFAULT_DETAIL_PARSE_NEO_HPP_INCLUDED

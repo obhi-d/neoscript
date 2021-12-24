@@ -17,5 +17,7 @@ Even the escape seq should not matter.
 -- text : text : secondregion
 
 
-This region {secondregion} follows the previous 
+This region {secondregion} follows the previous {textreg\}
+
+
 -- text --
