@@ -18,6 +18,9 @@ enum class retcode
   e_success = 0,
   e_success_stop,
   // for blocked commands, skip this block to next one
+  // the block is not entered at all
+  // compared to e_skip_rest, which allows skipping an 
+  // already entered block
   e_skip_block,   
   // skip the rest of the commands in current block, and do not
   // enter the current command if its a block command
