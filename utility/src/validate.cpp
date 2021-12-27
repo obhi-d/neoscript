@@ -122,18 +122,13 @@ struct fileout_command_handler : public neo::command_handler
 std::string read_file(std::filesystem::path path)
 {
   std::ifstream t{path};
-  t.seekg(0, std::ios::end);
-  size_t      size = t.tellg();
-  std::string buffer(size, '\0');
-  t.seekg(0);
-  t.read(&buffer[0], size);
+  std::string   buffer((std::istreambuf_iterator<char>(t)),
+                     std::istreambuf_iterator<char>());
   return buffer;
 }
 
 int main(int argc, char** argv)
-{
-  std::cout << "sizeof esqstring " << sizeof(neo::esq_string) << " vs single "
-            << sizeof(neo::single) << " vs list " << sizeof(neo::list) << std::endl;
+{  
   int rc = 0;
   if (argc > 1)
   {
