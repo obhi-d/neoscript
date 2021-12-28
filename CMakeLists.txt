@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 
 project(neoscript VERSION 0.0.1 LANGUAGES CXX)
-
+set(CMAKE_CXX_STANDARD 20)
 
 option(NEOSCRIPT_BUILD_TESTS      "Build the unit tests when BUILD_TESTING is enabled." ON)
 option(NEOSCRIPT_BUILD_STATIC     "Build as static lib."                                ON)
@@ -91,7 +91,6 @@ if (NEOSCRIPT_HEADER_ONLY)
   )
 
   target_compile_options(${NEOSCRIPT_TARGET_NAME} INTERFACE "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
-  target_compile_features(${NEOSCRIPT_TARGET_NAME} INTERFACE cxx_std_20)
   
 else() # LIB
 
@@ -113,7 +112,6 @@ else()
 endif()
 
   target_compile_options(${NEOSCRIPT_TARGET_NAME} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
-  target_compile_features(${NEOSCRIPT_TARGET_NAME} PUBLIC cxx_std_20)
 
   target_include_directories(
     ${NEOSCRIPT_TARGET_NAME}
