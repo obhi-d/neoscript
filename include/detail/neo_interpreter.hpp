@@ -1,6 +1,10 @@
 
 #pragma once
 
+#include <functional>
+#include <string_view>
+#include <neo_registry.hpp>
+
 namespace neo
 {
 
@@ -12,7 +16,7 @@ class interpreter
 public:
   static auto constexpr k_invalid_id = neo::registry::k_invalid_id;
 
-  static inline [[nodiscard]] retcode end_scope(neo::registry const& reg,
+  [[nodiscard]] static inline retcode end_scope(neo::registry const& reg,
                                neo::state_machine& ctx, command_handler* obj,
                                std::uint32_t    block,
                                std::string_view scope_id) noexcept 
