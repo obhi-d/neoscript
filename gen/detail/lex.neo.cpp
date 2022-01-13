@@ -712,7 +712,7 @@ static const flex_int16_t yy_chk[197] =
 	assert(buf[result] == 0);				\
 
 #define yyterminate() return neo::parser_impl::make_END(_.loc())
-#define YY_USER_ACTION                     _.loc().columns((std::uint32_t)yyleng);
+#define YY_USER_ACTION                     _.loc().step(); _.loc().columns((std::uint32_t)yyleng); 
 void * neo_alloc (std::size_t bytes, void * yyscanner);
 void * neo_realloc (void * ptr, std::size_t bytes, void * yyscanner);
 void   neo_free (void * ptr, void * yyscanner);

@@ -26,7 +26,9 @@ enum class retcode
   // enter the current command if its a block command
   e_skip_rest,    
   // stop parsing any further
-  e_fail_and_stop 
+  e_fail_and_stop,
+  // command not found stop
+  e_cmd_not_found
 };
 
 struct command_handler

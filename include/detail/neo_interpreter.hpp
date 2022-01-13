@@ -50,6 +50,8 @@ public:
         return std::make_tuple(block,
                                std::invoke(block_ref.any_, obj, ctx, cmd));
       }
+      else
+        return {k_invalid_id, neo::retcode::e_cmd_not_found};
     }
     return {new_block, neo::retcode::e_success};
   }

@@ -92,6 +92,13 @@ bool state_machine::consume(neo::command&& cmd) noexcept
       break;
     case neo::retcode::e_success_stop:
       return false;
+    case neo::retcode::e_cmd_not_found:
+      {
+        std::string err = "command not found: ";
+        err += cmd.name();
+        push_error(loc(), err);
+      }
+      return true;
     case neo::retcode::e_fail_and_stop:
       push_error(loc(), "command execution failure");
       return true;
