@@ -27,7 +27,7 @@ void   neo_free (void * ptr, void * yyscanner);
 
 REG     [a-zA-Z#_$:\-\.]+
 REGND   [a-zA-Z#_$\-\.]+
-BLANK   [ \t]
+BLANK   [ \t\r]
 %%
 
 
