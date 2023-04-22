@@ -29,9 +29,6 @@ add_custom_command(
    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/detail"
    COMMAND ${CMAKE_COMMAND} -E copy  "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.cpp" "${PROJECT_SOURCE_DIR}/gen/detail/parse.neo.hpp" "${PROJECT_SOURCE_DIR}/gen/detail/lex.neo.cpp" "${CMAKE_CURRENT_BINARY_DIR}/detail"
 
-   DEPENDS 
-	 "${PROJECT_SOURCE_DIR}/src/neo_parser.yy"
-     "${PROJECT_SOURCE_DIR}/src/neo_lexer.l"
  )
 
 else(NEOSCRIPT_USE_PRE_GENERATED_PARSERS)
