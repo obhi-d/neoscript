@@ -7,12 +7,10 @@ namespace neo
 class NEO_API command
 {
 public:
-  enum
-  {
-    k_param_single = 1,
-    k_param_list   = 2
-  };
-
+  static constexpr uint32_t param_single = 1;
+  static constexpr uint32_t param_list = 2;
+  static constexpr uint32_t param_esq_string = 3;
+  
   using list       = neo::list;
   using single     = neo::single;
   using esq_string = neo::esq_string;
