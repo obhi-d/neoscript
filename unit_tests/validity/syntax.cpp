@@ -116,6 +116,26 @@ TEST_CASE("Allow dash in command name", "[region0]")
   REQUIRE(handler.output == "echo-com --> (Hello world, --How, -are, --you)\n");
 }
 
+TEST_CASE("Compile command invokation", "[region0]")
+{
+  neo::registry test_interpreter;
+  std::string   test = R"_(
+  echo -E chdir "${config_rt_dir}/bin" ./Render.VulkanLoaderGen -i "${module_dir}/media/Internal" -o "${module_gen_dir}/local";
+  echo Next;
+)_";
+
+  test_interpreter.add_command(
+      test_interpreter.root, "echo",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "echo --> (-E, chdir, ${config_rt_dir}/bin, ./Render.VulkanLoaderGen, -i, ${module_dir}/media/Internal, -o, ${module_gen_dir}/local)\necho --> (Next)\n");
+}
+
 TEST_CASE("Unnamed Template", "[region0]")
 {
   neo::registry test_interpreter;

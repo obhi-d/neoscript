@@ -1,57 +1,79 @@
 {
     "version": 2,
-    "configurePresets": [
-        {
-          "name": "linux-default",
-          "displayName": "Linux Debug",
-          "description": "Target the Windows Subsystem for Linux (WSL) or a remote Linux system.",
-          "generator": "Ninja",
-          "binaryDir": "${sourceDir}/out/build/${presetName}",
-          "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Debug",
-            "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-            "NEOSCRIPT_USE_PRE_GENERATED_PARSERS": "OFF"
-          }
-        },
-        {
-          "name": "macos-default",
-          "displayName": "macOS Debug",
-          "description": "Target a remote macOS system with Ninja",
-          "generator": "Ninja",
-          "binaryDir": "${sourceDir}/out/build/${presetName}",
-          "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Debug",
-            "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
-          }
-        },
-        {
-          "name": "windows-default",
-          "displayName": "Windows x64 Debug",
-          "description": "Target Windows with the Visual Studio development environment.",
-          "generator": "Ninja",
-          "binaryDir": "${sourceDir}/out/build/${presetName}",
-          "architecture": {
-            "value": "x64",
-            "strategy": "external"
-          },
-          "cacheVariables": {
-            "CMAKE_BUILD_TYPE": "Debug",
-            "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
-          }
-        }
-      ],
-      "buildPresets": [
-        {
-          "name": "linux-default",
-          "configurePreset": "linux-default"
-        },
-        {
-          "name": "windows-default",
-          "configurePreset": "windows-default"
-        },
-        {
-          "name": "macos-default",
-          "configurePreset": "macos-default"
-        }
-      ]
+  "configurePresets": [
+    {
+      "name": "linux-default",
+      "displayName": "Linux Debug",
+      "description": "Target the Windows Subsystem for Linux (WSL) or a remote Linux system.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+        "NEOSCRIPT_USE_PRE_GENERATED_PARSERS": "OFF"
+      }
+    },
+    {
+      "name": "macos-default",
+      "displayName": "macOS Debug",
+      "description": "Target a remote macOS system with Ninja",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+      }
+    },
+    {
+      "name": "windows-default",
+      "displayName": "Windows x64 Debug",
+      "description": "Target Windows with the Visual Studio development environment.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+      }
+    },
+    {
+      "name": "windows-from-scratch",
+      "displayName": "WindowsScratchDebug",
+      "description": "Target Windows with the Visual Studio development environment.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+        "NEOSCRIPT_BISON": "${sourceDir}/out/winflexbison/win_bison.exe",
+        "NEOSCRIPT_FLEX": "${sourceDir}/out/winflexbison/win_flex.exe",
+        "NEOSCRIPT_USE_PRE_GENERATED_PARSERS" : "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-default",
+      "configurePreset": "linux-default"
+    },
+    {
+      "name": "windows-default",
+      "configurePreset": "windows-default"
+    },
+    {
+      "name": "macos-default",
+      "configurePreset": "macos-default"
+    },
+    {
+      "name": "windows-from-scratch",
+      "configurePreset": "windows-from-scratch"
+    }
+  ]
 }
