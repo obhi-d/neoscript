@@ -23,7 +23,7 @@ void * neo_realloc (void * ptr, std::size_t bytes, void * yyscanner);
 void   neo_free (void * ptr, void * yyscanner);
 %}
 
-%x STATE_REGION STATE_REGION_TEXT STATE_REGION_CODE STATE_TEXT STATE_STR STATE_CONTENT STATE_COMMENT STATE_SINGLE_LINE_COMMENT
+%x STATE_REGION STATE_REGION_TEXT STATE_REGION_CODE STATE_TEXT STATE_STR STATE_CONTENT STATE_COMMENT STATE_SINGLE_LINE_COMMENT 
 
 REG     [a-zA-Z#_$:\.]+
 REGND   [a-zA-Z#_$\.]+
@@ -33,8 +33,8 @@ BLANK   [ \t\r]
 
 <STATE_TEXT>{
 
-\\\{ 		 _.push_content(); _.skip_len(1); _.put(1); 
-^\{\{        {
+^"\\--" 	 _.push_content(); _.skip_len(1); _.put(2); 
+^"--"        {
 	BEGIN(STATE_REGION); 
 
 	_.push_content(); 
@@ -80,7 +80,7 @@ BLANK   [ \t\r]
 }
 
 <INITIAL,STATE_CONTENT>{
-^--                                BEGIN(STATE_REGION); _.skip_len(2);
+^"--"                              BEGIN(STATE_REGION); _.skip_len(2);
 "/*"                               BEGIN(STATE_COMMENT); _.skip_len(2);
 "//"                               BEGIN(STATE_SINGLE_LINE_COMMENT); _.skip_len(2);
 "{"                                _.skip_len(1); return neo::parser_impl::make_LBRACKET(_.loc());
@@ -101,7 +101,7 @@ BLANK   [ \t\r]
 "\""                               _.skip_len(1); BEGIN(STATE_STR);  
 [\n]+  		  	                     _.skip_len(yyleng); _.loc().lines((std::uint32_t)yyleng); 
 {BLANK}+   	                       _.skip_len(yyleng); 
-[^ \<\>\"\{\}\[\],;()\t\n\r=\:]+   _.put(yyleng); return neo::parser_impl::make_IDENTIFIER(_.make_token(), _.loc());
+[^ \<\>\"\{\}\[\],;()\t\n\r=\:-]+  _.put(yyleng); return neo::parser_impl::make_IDENTIFIER(_.make_token(), _.loc());
 
 }
 
@@ -125,8 +125,9 @@ BLANK   [ \t\r]
 
 <STATE_REGION_TEXT,STATE_REGION_CODE>{
 
---  {
+"--"|\n  {
 	auto value = _.make_token();
+	value = _.trim(value);
 	_.skip_len(yyleng);
 	if (YY_START == STATE_REGION_CODE) {
 		BEGIN(STATE_CONTENT);

@@ -1,9 +1,10 @@
 #define CATCH_CONFIG_MAIN
 #define NEO_IMPLEMENT
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <fstream>
 #include <istream>
+#include <iostream>
 #include <neo_script.hpp>
 #include <sstream>
 #include <streambuf>

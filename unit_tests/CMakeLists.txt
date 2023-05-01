@@ -4,7 +4,7 @@ include(FetchContent)
 
 FetchContent_Declare(Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG c4e3767e265808590986d5db6ca1b5532a7f3d13
+  GIT_TAG v3.3.2
 )
 
 set(CATCH_BUILD_TESTING OFF)
@@ -18,8 +18,7 @@ macro(validity_test test_name definitions compile_flags link_options)
     validity/syntax.cpp
     )
   add_test(validity-${test_name} neotest-validity-${test_name})
-  add_dependencies(neotest-validity-${test_name} Catch2)
-  target_link_libraries(neotest-validity-${test_name} PRIVATE Catch2)
+  target_link_libraries(neotest-validity-${test_name} PRIVATE Catch2::Catch2WithMain)
   target_link_libraries(neotest-validity-${test_name} PRIVATE ${NEOSCRIPT_TARGET_NAME})
   target_compile_definitions(neotest-validity-${test_name} PRIVATE ${definitions})
   target_compile_options(neotest-validity-${test_name} PRIVATE ${compile_flags})
@@ -52,6 +51,7 @@ file(GLOB NEO_DATASET CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/
 file(GLOB NEO_EXPECTED CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected/*.neoscript)
 
 validity_test("cpp" "" "${NEO_COMMON_CXX_FLAGS}" "${NEO_COMMON_CXX_LINK_FLAGS}")
+
 add_custom_command(TARGET neotest-validity-cpp POST_BUILD 
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/dataset ${CMAKE_BINARY_DIR}/dataset
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/unit_tests/validity/expected ${CMAKE_BINARY_DIR}/expected

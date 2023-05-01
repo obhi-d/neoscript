@@ -11,7 +11,7 @@ comm2 "param0" [param1, param2, param3];
 comm3 [[param1, param2], param1, [param3]] (context = specific_parametrs, are_also = "supported and can be quieried");
 comm4 "sub-param" [[param1, param2], param1, [param3]] "big string value";
 
-{{code:another-script}}
+-- code:another-script --
 comm5 {
  comm6 [[param1, param2]];
  comm7 {
@@ -23,13 +23,13 @@ comm5 {
 }
 comm9 [[param1="list", param2="special"], param1="parameters", [param3="are also possible"]];
 
-{{text:atextreg}}
+-- text:atextreg --
 So this is what was expected.
 Everything working. No big deal.
 Lets check if this actually works.
 
 Last line of operation.
-{{code:onemore}}
+-- code:onemore --
 
 block parameter0 parameter1 {
  command parameter2 parameter4;

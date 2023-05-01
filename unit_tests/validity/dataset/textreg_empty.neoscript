@@ -15,7 +15,7 @@ fetch "https://github.com/boostorg/boost.git"
   }
 }
 
-{{cmake:custom_build}}
+-- cmake:custom_build --
 
 if (${config_platform} STREQUAL "windows")
   set(bootstrap "bootstrap.bat")

@@ -1,5 +1,5 @@
 
-{{text:textreg}}
+-- text : textreg --
 
 This is a text region. It doesnt matter what I type here
 \\a/a\\a/t\\t\\.a
@@ -10,7 +10,7 @@ Even the escape seq should not matter.
   bracket should appear correctly.
 }
 
-{{text:secondregion}}
+-- text : secondregion --
 
-This region {secondregion} follows the previous \{textreg\}
+This region {secondregion} follows the previous {textreg}
 

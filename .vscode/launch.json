@@ -4,13 +4,14 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    
         {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/unit_tests/neotest-validity-cpp",
+            "program": "${workspaceFolder}/out/build/linux-default/unit_tests/neotest-validity-cpp",
             "args": [],
-            "cwd": "${workspaceFolder}/build/unit_tests",
+            "cwd": "${workspaceFolder}/out/build/linux-default/unit_tests",
             "MIMode": "gdb",
             "setupCommands": [
                 {

@@ -1,4 +1,4 @@
-{{code:GameEcho}}
+-- code : GameEcho --
 
 template EchoHelp<Msg>
 Echo "Help!~ " Msg;

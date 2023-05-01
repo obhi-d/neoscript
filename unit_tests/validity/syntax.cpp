@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <istream>
 #include <neo_script.hpp>
@@ -100,7 +100,7 @@ struct test_command_handler : public neo::command_handler
 TEST_CASE("Scoped command", "[region0]")
 {
   neo::registry test_interpreter;
-  std::string   test = "{{code:Scoped}} \n"
+  std::string   test = "--code:Scoped-- \n"
                      "echo \"Hello world\"; \n";
   
   auto root = test_interpreter.ensure_region_root("Scoped");
@@ -119,13 +119,13 @@ TEST_CASE("Scoped command", "[region0]")
 TEST_CASE("Text region", "[textregion1]")
 {
   neo::registry test_interpreter;
-  std::string   test = "{{text:History}}\n"
+  std::string   test = "--text:History --\n"
                      "The world began when we perished.\n"
                      "But we left our mark to be found again.\n"
                      "In the future, we lived again in memories.\n"
                      "Of time{\n"
-                     "\\{\\{unknown}}\n"
-                     "{{code:Print}}\n"
+                     "{{unknown}}\n"
+                     "--code: Print --\n"
                      "print (region = \"History\"); \n";
   
   auto root = test_interpreter.ensure_region_root("Print");
@@ -159,16 +159,16 @@ TEST_CASE("Text region 2", "[textregion2]")
 {
   neo::registry test_interpreter;
   std::string   test =
-      "{{text:textreg}}\n"
+      "-- text:textreg --\n"
       "The world began when we perished.\n"
       "\\a/a\\a/t\\t\\.a.\n"
       "@.\n"
       "{\n"
       " bracket should appear correctly.\n"
       "}\n"
-      "{{text:secondregion}}\n"
-      "This region {secondregion} follows the previous \\{textreg}\n"
-      "{{code:Print}}\n"
+      "-- text:secondregion--\n"
+      "This region {secondregion} follows the previous {textreg}\n"
+      "-- code:Print\n"
       "print (region = \"textreg\"); \n"
       "print (region = \"secondregion\"); \n";
 
@@ -206,13 +206,13 @@ TEST_CASE("Any command", "[region2]")
   neo::registry test_interpreter;
   std::string   test = "first command [is, executed];\n"
                      "second command [is, stalled];\n"
-                     "{{code:Main}}\n"
+                     "-- code:Main --\n"
                      "Third command [is, super = executed];\n"
                      "Fourth command [is, stalled] {\n"
                      "  Four point one command;\n"
                      "  Four point two command;\n"
                      "}\n"
-                     "{{code:Print}}\n"
+                     "-- code:Print --\n"
                      "print (region = \"text:History\"); \n";
   
   neo::command_hook lambda = [](neo::command_handler*     _,

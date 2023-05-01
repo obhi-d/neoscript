@@ -79,6 +79,18 @@ public:
     len_reading_ = 0;
   }
 
+  static std::string_view trim(std::string_view str, std::string_view whitespace = " \t")
+  {
+    const auto str_begin = str.find_first_not_of(whitespace);
+    if (str_begin == std::string::npos)
+        return str; 
+
+    const auto str_end = str.find_last_not_of(whitespace);
+    const auto str_range = str_end - str_begin + 1;
+
+    return str.substr(str_begin, str_range);
+  }
+
   std::string_view make_token() noexcept
 
   {
