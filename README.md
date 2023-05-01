@@ -1,5 +1,8 @@
 # neoscript : A Command Driven DSL 
 
+[![Build](https://github.com/obhi-d/neoscript/actions/workflows/test_and_coverage.yml/badge.svg)](https://github.com/obhi-d/neoscript/actions/workflows/test_and_coverage.yml)
+[![Coverage Status](https://coveralls.io/repos/github/obhi-d/neoscript/badge.svg?branch=main)](https://coveralls.io/github/obhi-d/neoscript?branch=main)
+
 NS relies on being parsed by a SAX parser, and drives
 a command based interface while parsing files.
 
