@@ -101,7 +101,7 @@ TEST_CASE("Allow dash in command name", "[region0]")
 {
   neo::registry test_interpreter;
   std::string   test = "--code:Scoped-- \n"
-                     "echo-com \"Hello world\"; \n";
+                     "echo-com \"Hello world\" --How -are --you; \n";
 
   auto root = test_interpreter.ensure_region_root("Scoped");
   test_interpreter.add_command(
@@ -113,7 +113,7 @@ TEST_CASE("Allow dash in command name", "[region0]")
   neo::state_machine   state_machine(test_interpreter, &handler, 0);
   state_machine.parse("memory", test);
   REQUIRE(!state_machine.fail_bit());
-  REQUIRE(handler.output == "echo-com --> (Hello world)\n");
+  REQUIRE(handler.output == "echo-com --> (Hello world, --How, -are, --you)\n");
 }
 
 TEST_CASE("Unnamed Template", "[region0]")

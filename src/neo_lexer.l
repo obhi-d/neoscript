@@ -27,6 +27,7 @@ void   neo_free (void * ptr, void * yyscanner);
 
 REGND   [a-zA-Z#_$\.]+
 BLANK   [ \t\r]
+STRCH   [a-zA-Z0-9\._@*]
 %%
 
 
@@ -79,7 +80,8 @@ BLANK   [ \t\r]
 }
 
 <INITIAL,STATE_CONTENT>{
-^"--"                               BEGIN(STATE_REGION); _.skip_len(2);
+^--                                 BEGIN(STATE_REGION); _.skip_len(2);
+-                                   _.put(yyleng);
 "/*"                                BEGIN(STATE_COMMENT); _.skip_len(2);
 "//"                                BEGIN(STATE_SINGLE_LINE_COMMENT); _.skip_len(2);
 "{"                                 _.skip_len(1); return neo::parser_impl::make_LBRACKET(_.loc());
@@ -100,7 +102,7 @@ BLANK   [ \t\r]
 "\""                                _.skip_len(1); BEGIN(STATE_STR);
 [\n]+  		  	                      _.skip_len(yyleng); _.loc().lines((std::uint32_t)yyleng);
 {BLANK}+   	                        _.skip_len(yyleng);
-[a-zA-Z0-9\._@*][a-zA-Z0-9\._@*\-]* _.put(yyleng); return neo::parser_impl::make_STRING(_.make_token(), _.loc());
+{STRCH}({STRCH}|"-")*               _.put(yyleng); return neo::parser_impl::make_STRING(_.make_token(), _.loc());
 
 }
 
