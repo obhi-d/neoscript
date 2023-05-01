@@ -97,6 +97,42 @@ struct test_command_handler : public neo::command_handler
   std::string                                  output;
 };
 
+TEST_CASE("Allow dash in command name", "[region0]")
+{
+  neo::registry test_interpreter;
+  std::string   test = "--code:Scoped-- \n"
+                     "echo-com \"Hello world\"; \n";
+
+  auto root = test_interpreter.ensure_region_root("Scoped");
+  test_interpreter.add_command(
+      root, "echo-com",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "echo-com --> (Hello world)\n");
+}
+
+TEST_CASE("Unnamed Template", "[region0]")
+{
+  neo::registry test_interpreter;
+  std::string   test = "$[A, B]\necho A B; ^echo[Hello, World];\n";
+
+  test_interpreter.add_command(
+      test_interpreter.root, "echo",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "echo --> (Hello, World)\n");
+}
+
 TEST_CASE("Code region with command", "[region0]")
 {
   neo::registry test_interpreter;
