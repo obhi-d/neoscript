@@ -28,6 +28,7 @@ void   neo_free (void * ptr, void * yyscanner);
 REG     [a-zA-Z#_$:\.]+
 REGND   [a-zA-Z#_$\.]+
 BLANK   [ \t\r]
+STRID   [a-zA-Z0-9\._@*]
 %%
 
 
@@ -100,8 +101,8 @@ BLANK   [ \t\r]
 ":"                                _.skip_len(1); return neo::parser_impl::make_COLON(_.loc());
 "\""                               _.skip_len(1); BEGIN(STATE_STR);  
 [\n]+  		  	                     _.skip_len(yyleng); _.loc().lines((std::uint32_t)yyleng); 
-{BLANK}+   	                       _.skip_len(yyleng);
-[a-zA-Z0-9\._@*]+                  _.put(yyleng); return neo::parser_impl::make_STRING(_.make_token(), _.loc());
+{BLANK}+   	                        _.skip_len(yyleng);
+[a-zA-Z0-9\._@*][a-zA-Z0-9\._@*\-]+ _.put(yyleng); return neo::parser_impl::make_STRING(_.make_token(), _.loc());
 
 }
 
