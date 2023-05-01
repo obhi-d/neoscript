@@ -1,15 +1,15 @@
 
-template Echo<Msg>
+$Echo[Msg]
 Command {
 	print Msg;
 }
 
-using Echo<"Hello">;
+^Echo["Hello"];
 
-template <Msg>
+$[Msg]
 Clean {
 	print Msg;
 }
 
-using Clean<"World">;
+^Clean ["World"];
 

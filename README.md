@@ -79,28 +79,30 @@ A region id may contain spaces, but the trailing and preceding spaces are remove
 A script might also include templates.
 Templates are command group definition which are invoked based on parameters passed later in the script.
 
-Templates are defined with the keyword `template` as follows:
+Templates are defined with the `$` operator as follows:
 
 ```
 // parameterless template
-template template_name_1<> 
+$template_name_1[] 
 command ; // called without any parameters
 
 // template with parameters
-template template_name_2<parameter_A, parameter_B> 
+$template_name_2[parameter_A, parameter_B]
 command parameter_A parameter_B
 {
 	new_command parameter_B;
 }
-
+$[] unnamed_template parameter_A;
 ```
 
 `template_name_1` and `template_name_2` are template names.
-The command `command` will not be invoked when this definition is encountered. It can be invoked later in the file using the `using` keyword.
+The command `command` will not be invoked when this definition is encountered. It can be invoked later in the file using the `^` operator.
+Template commands may also be unnamed, in which case they should be invoked by the command name they encompass.
 
 ```
-using template_name_1<>;
-using template_name_2<"value 1", "value 2">;
+^template_name_1[];
+^template_name_2["value 1", "value 2"];
+^unnamed_template;
 ```
 
 ## Script
@@ -111,25 +113,25 @@ A complete script might look like:
 
 -- code: code section --
 
-template shader_definition<shader_type, file>
+$shader_definition[shader_type, file]
 shader shader_type
 {
 	files "common.glsl" "functions.glsl" "ubos.glsl" file (optional=[enable_debugging, no_optimization]);
 	type shader_type;
 }
 
-using shader_definition<vertex, "vertex.glsl">;
-using shader_definition<fragment, "fragment.glsl">;
+^shader_definition[vertex, "vertex.glsl"];
+^shader_definition[fragment, "fragment.glsl"];
 
-template compiler<shader, options>
+$compiler[shader, options]
 compile 
 {
 	shader_options options;
 	compile shader;
 }
 
-using compiler<vertex_shader,"">;
-using compiler<fragment_shader,"">;
+^compiler[vertex_shader,""];
+^compiler[fragment_shader,""];
 
 // shaders are now compiled !
 

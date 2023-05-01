@@ -37,32 +37,32 @@ block parameter0 parameter1 {
 
 // Test templates 
 
-template Echo<Msg>
+$Echo[Msg]
 templ {
 	print Msg;
 }
 
-using Echo<"Hello">;
+^ Echo["Hello"];
 
-template <Msg>
+$[Msg]
 templ2 {
 	print Msg;
 }
 
-using templ2<"World">;
+^templ2["World"];
 
-template <A, B, C>
+$[A, B, C]
 templ3 {
 	print A;
 	print B C;
 }
 
-using templ3<"Hello">;
+^templ3["Hello"];
 
-template <A, B, C, D>
+$[A, B, C, D]
 templ4 {
 	print A B (a=C, b=D);
 }
 
-using templ4<"World">;
+^templ4["World"];
 

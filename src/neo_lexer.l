@@ -85,8 +85,8 @@ BLANK   [ \t\r]
 "//"                               BEGIN(STATE_SINGLE_LINE_COMMENT); _.skip_len(2);
 "{"                                _.skip_len(1); return neo::parser_impl::make_LBRACKET(_.loc());
 "}"                                _.skip_len(1); return neo::parser_impl::make_RBRACKET(_.loc());
-"template"	                       _.skip_len(8); return neo::parser_impl::make_TEMPLATE(_.loc());
-"using"	                           _.skip_len(5); return neo::parser_impl::make_USING(_.loc());
+"$"       	                       _.skip_len(1); return neo::parser_impl::make_TEMPLATE(_.loc());
+"^"	                               _.skip_len(1); return neo::parser_impl::make_USING(_.loc());
 "import"	                         _.skip_len(6); return neo::parser_impl::make_IMPORT(_.loc());
 "<"			                           _.skip_len(1); return neo::parser_impl::make_LABRACKET(_.loc());
 ">"			                           _.skip_len(1); return neo::parser_impl::make_RABRACKET(_.loc());
@@ -100,8 +100,8 @@ BLANK   [ \t\r]
 ":"                                _.skip_len(1); return neo::parser_impl::make_COLON(_.loc());
 "\""                               _.skip_len(1); BEGIN(STATE_STR);  
 [\n]+  		  	                     _.skip_len(yyleng); _.loc().lines((std::uint32_t)yyleng); 
-{BLANK}+   	                       _.skip_len(yyleng); 
-[^ \<\>\"\{\}\[\],;()\t\n\r=\:-]+  _.put(yyleng); return neo::parser_impl::make_IDENTIFIER(_.make_token(), _.loc());
+{BLANK}+   	                       _.skip_len(yyleng);
+[a-zA-Z0-9\._@*]+                  _.put(yyleng); return neo::parser_impl::make_STRING(_.make_token(), _.loc());
 
 }
 

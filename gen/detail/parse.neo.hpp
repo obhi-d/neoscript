@@ -449,7 +449,7 @@ namespace neo {
 
       // REGION_ID
       // TEXT_REGION_ID
-      // IDENTIFIER
+      // STRING
       // commandname
       char dummy8[sizeof (std::string_view)];
 
@@ -524,7 +524,7 @@ namespace neo {
     IMPORT = 272,                  // "import"
     REGION_ID = 273,               // REGION_ID
     TEXT_REGION_ID = 274,          // TEXT_REGION_ID
-    IDENTIFIER = 275,              // IDENTIFIER
+    STRING = 275,                  // STRING
     STRING_LITERAL = 276,          // STRING_LITERAL
     TEXT_CONTENTS = 277            // TEXT_CONTENTS
       };
@@ -565,7 +565,7 @@ namespace neo {
         S_IMPORT = 17,                           // "import"
         S_REGION_ID = 18,                        // REGION_ID
         S_TEXT_REGION_ID = 19,                   // TEXT_REGION_ID
-        S_IDENTIFIER = 20,                       // IDENTIFIER
+        S_STRING = 20,                           // STRING
         S_STRING_LITERAL = 21,                   // STRING_LITERAL
         S_TEXT_CONTENTS = 22,                    // TEXT_CONTENTS
         S_YYACCEPT = 23,                         // $accept
@@ -650,7 +650,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (std::move (that.value));
         break;
@@ -865,7 +865,7 @@ switch (yykind)
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.template destroy< std::string_view > ();
         break;
@@ -1008,7 +1008,7 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        NEO__ASSERT ((token::REGION_ID <= tok && tok <= token::IDENTIFIER));
+        NEO__ASSERT ((token::REGION_ID <= tok && tok <= token::STRING));
 #endif
       }
     };
@@ -1362,16 +1362,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_IDENTIFIER (std::string_view v, location_type l)
+      make_STRING (std::string_view v, location_type l)
       {
-        return symbol_type (token::IDENTIFIER, std::move (v), std::move (l));
+        return symbol_type (token::STRING, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_IDENTIFIER (const std::string_view& v, const location_type& l)
+      make_STRING (const std::string_view& v, const location_type& l)
       {
-        return symbol_type (token::IDENTIFIER, v, l);
+        return symbol_type (token::STRING, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -1734,7 +1734,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 64,     ///< Last index in yytable_.
+      yylast_ = 65,     ///< Last index in yytable_.
       yynnts_ = 13,  ///< Number of nonterminal symbols.
       yyfinal_ = 23 ///< Termination state number.
     };
@@ -1837,7 +1837,7 @@ switch (yykind)
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.copy< std::string_view > (YY_MOVE (that.value));
         break;
@@ -1910,7 +1910,7 @@ switch (yykind)
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (YY_MOVE (s.value));
         break;

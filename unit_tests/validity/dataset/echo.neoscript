@@ -1,25 +1,25 @@
 -- code : GameEcho --
 
-template EchoHelp<Msg>
+$EchoHelp[Msg]
 Echo "Help!~ " Msg;
 
-template EchoHowMany<HowMany>
+$EchoHowMany[HowMany]
 Echo "HowMany!~ " HowMany;
 
-template EchoEnemy<Whose, Origin>
+$EchoEnemy[Whose, Origin]
 Echo "Enemy!~ Of " Whose " From " Origin;
 
-template <Name>
+$[Name]
 Inner {
     Echo "Inside!~ " Name;
 }
 
-template <Who, Name, Whom>
+$[Who, Name, Whom]
 Spell {
     Echo "Spell!~ " Who " casting spell " Name " on " Whom;
 }
 
-template Secret<Msg, Dest>
+$Secret[Msg, Dest]
 Inner {
     Hidden {
         Echo "Hidden!~ " Msg " transmitting to " Dest;
@@ -33,13 +33,13 @@ Inner {
 }
 
 Echo "I am waiting.";
-using EchoHelp<"Enemy found me!">;
-using EchoHowMany<["KrakenLevel10", "KrakenLevel12", "DusaLevel22"]>;
-using EchoEnemy<"Fantastico", "Underlord Cavern">;
-using EchoEnemy<"Fantastico", "Severed Head Inn">;
-using Inner<"Fantastico sanctum">;
-using Spell<"KrakenLevel10", "Fligano", "Mr.Fantastic">;
-using Secret<"Magic Wand", "Fantastico sanctum">;
-using Spell<"Mr.Fantastic", "Fligano", "KrakenLevel10">;
+^EchoHelp["Enemy found me!"];
+^EchoHowMany[["KrakenLevel10", "KrakenLevel12", "DusaLevel22"]];
+^EchoEnemy["Fantastico", "Underlord Cavern"];
+^EchoEnemy["Fantastico", "Severed Head Inn"];
+^Inner["Fantastico sanctum"];
+^Spell["KrakenLevel10", "Fligano", "Mr.Fantastic"];
+^Secret["Magic Wand", "Fantastico sanctum"];
+^Spell["Mr.Fantastic", "Fligano", "KrakenLevel10"];
 Echo "KrakenLevel10 just died! Victory!";
 

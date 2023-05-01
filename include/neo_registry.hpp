@@ -72,8 +72,8 @@ struct command_id
   inline bool operator==(command_id const&) const noexcept = default;
   inline bool operator!=(command_id const&) const noexcept = default;
 
-  command_id() = default;
-  command_id(std::uint32_t f, std::uint32_t i) : parent(f), iid(i) {}
+  constexpr command_id() = default;
+  constexpr command_id(std::uint32_t f, std::uint32_t i) : parent(f), iid(i) {}
 };
 
 using registry_id = std::uint32_t;
@@ -104,6 +104,8 @@ public:
   static constexpr std::uint32_t k_np_id_mask = 0x80000000;
   static constexpr std::uint32_t k_np_cl_mask = ~k_np_id_mask;
   static constexpr std::uint32_t k_invalid_id = 0xffffffff;
+
+  static constexpr command_id root = {};
 
   registry() noexcept
 
@@ -174,9 +176,9 @@ public:
   /// command path. Path starts with region name.
   /// For example:
   /// echo { }
-  /// {{code:first_reg}}
+  /// --code:first_reg--
   /// echo { }
-  /// {{code:second_reg}}
+  /// --code:second_reg--
   /// upper { echo { } }
   /// To make all 'echo' command behave the same:
   /// @code alias_command("@/echo", "@second_reg/upper/echo");

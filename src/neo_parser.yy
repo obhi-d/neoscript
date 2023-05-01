@@ -62,7 +62,7 @@ YY_DECL;
 	IMPORT	   "import"
 	;
 
-%token <std::string_view> REGION_ID TEXT_REGION_ID IDENTIFIER 
+%token <std::string_view> REGION_ID TEXT_REGION_ID STRING
 %token <neo::flex_string> STRING_LITERAL
 %token <neo::text_content> TEXT_CONTENTS 
 
@@ -102,7 +102,7 @@ statement:
 
 
 template_args.0.N:	/* empty string */		
-					| IDENTIFIER	{ 
+          | STRING	{
 						if (!_.skip())
 						{
 							std::vector<std::string_view> args; 
@@ -110,7 +110,7 @@ template_args.0.N:	/* empty string */
 							$$ = std::move(args); 
 						}
 					}
-					| template_args.0.N COMMA IDENTIFIER  { 
+          | template_args.0.N COMMA STRING  {
 						if (!_.skip())
 						{
 							$$ = std::move($1);
@@ -119,28 +119,28 @@ template_args.0.N:	/* empty string */
 					}
 					;
 
-templatedecl: TEMPLATE LABRACKET template_args.0.N RABRACKET commanddecl {
+templatedecl: TEMPLATE LSQBRACKET template_args.0.N RSQBRACKET commanddecl {
 						if (!_.skip())
 								$$ = std::move(_.make_command_template(
 											std::move($3), std::move($5)));
 						 }
-			   | TEMPLATE IDENTIFIER LABRACKET template_args.0.N RABRACKET commanddecl {
+         | TEMPLATE STRING LSQBRACKET template_args.0.N RSQBRACKET commanddecl {
 				   		if (!_.skip())
 				 				$$ = std::move(_.make_command_template(std::move($2),
 							        std::move($4), std::move($6)));
 				     }
 				;
 
-commandname:  IDENTIFIER { $$ = std::move($1); }
-			| IDENTIFIER ASSIGN { $$ = std::move($1); }
-			| IDENTIFIER COLON { $$ = std::move($1); }
+commandname:  STRING { $$ = std::move($1); }
+      | STRING ASSIGN { $$ = std::move($1); }
+      | STRING COLON { $$ = std::move($1); }
 
 commanddecl: 
 		   commandname parameters.0.N SEMICOLON      { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2))); }
 		 | commandname parameters.0.N LBRACKET       { if (!_.skip()) $$ = std::move(_.make_command(std::move($1), std::move($2), true)); else _.enter_skip_scope(); }
 		 
-instancedecl: USING IDENTIFIER LABRACKET list.0.N RABRACKET SEMICOLON { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
-		 | USING IDENTIFIER LABRACKET list.0.N RABRACKET LBRACKET         { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
+instancedecl: USING STRING LSQBRACKET list.0.N RSQBRACKET SEMICOLON { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4))); }
+     | USING STRING LSQBRACKET list.0.N RSQBRACKET LBRACKET         { if (!_.skip()) $$ = std::move(_.make_instance(std::move($2), std::move($4), true)); }
 
 parameters.0.N:   /* empty string */      
 				  | parameter	{ if (!_.skip()) $$.append(std::move($1)); }
@@ -176,7 +176,7 @@ special_parameters.0.N:     /* empty string */
 			}
 			;
 
-special_parameter: IDENTIFIER  ASSIGN  parameter 
+special_parameter: STRING  ASSIGN  parameter
 			{ 
 				if (!_.skip())
 				{
@@ -197,7 +197,7 @@ parameter: STRING_LITERAL						{
 													}
 														
 												}
-			| IDENTIFIER                        { if (!_.skip()) $$ = command::single(std::move($1)); }
+      | STRING                        { if (!_.skip()) $$ = command::single(std::move($1)); }
 			| LSQBRACKET list.0.N RSQBRACKET    { if (!_.skip()) $$ = std::move($2); }
 			;
 			

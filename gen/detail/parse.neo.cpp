@@ -240,7 +240,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.YY_MOVE_OR_COPY< std::string_view > (YY_MOVE (that.value));
         break;
@@ -297,7 +297,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (YY_MOVE (that.value));
         break;
@@ -354,7 +354,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.copy< std::string_view > (that.value);
         break;
@@ -410,7 +410,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         value.move< std::string_view > (that.value);
         break;
@@ -463,7 +463,7 @@ namespace neo {
                  { yyoutput << yysym.value.template as < std::string_view > (); }
         break;
 
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
                  { yyoutput << yysym.value.template as < std::string_view > (); }
         break;
 
@@ -738,7 +738,7 @@ namespace neo {
 
       case symbol_kind::S_REGION_ID: // REGION_ID
       case symbol_kind::S_TEXT_REGION_ID: // TEXT_REGION_ID
-      case symbol_kind::S_IDENTIFIER: // IDENTIFIER
+      case symbol_kind::S_STRING: // STRING
       case symbol_kind::S_commandname: // commandname
         yylhs.value.emplace< std::string_view > ();
         break;
@@ -805,8 +805,8 @@ namespace neo {
 												 }
     break;
 
-  case 14: // template_args.0.N: IDENTIFIER
-                                                        { 
+  case 14: // template_args.0.N: STRING
+                        {
 						if (!_.skip())
 						{
 							std::vector<std::string_view> args; 
@@ -816,8 +816,8 @@ namespace neo {
 					}
     break;
 
-  case 15: // template_args.0.N: template_args.0.N "," IDENTIFIER
-                                                                              { 
+  case 15: // template_args.0.N: template_args.0.N "," STRING
+                                            {
 						if (!_.skip())
 						{
 							yylhs.value.as < std::vector<std::string_view> > () = std::move(yystack_[2].value.as < std::vector<std::string_view> > ());
@@ -826,32 +826,32 @@ namespace neo {
 					}
     break;
 
-  case 16: // templatedecl: "template" "<" template_args.0.N ">" commanddecl
-                                                                         {
+  case 16: // templatedecl: "template" "[" template_args.0.N "]" commanddecl
+                                                                           {
 						if (!_.skip())
 								yylhs.value.as < command_template > () = std::move(_.make_command_template(
 											std::move(yystack_[2].value.as < std::vector<std::string_view> > ()), std::move(yystack_[0].value.as < command > ())));
 						 }
     break;
 
-  case 17: // templatedecl: "template" IDENTIFIER "<" template_args.0.N ">" commanddecl
-                                                                                                   {
+  case 17: // templatedecl: "template" STRING "[" template_args.0.N "]" commanddecl
+                                                                               {
 				   		if (!_.skip())
 				 				yylhs.value.as < command_template > () = std::move(_.make_command_template(std::move(yystack_[4].value.as < std::string_view > ()),
 							        std::move(yystack_[2].value.as < std::vector<std::string_view> > ()), std::move(yystack_[0].value.as < command > ())));
 				     }
     break;
 
-  case 18: // commandname: IDENTIFIER
-                         { yylhs.value.as < std::string_view > () = std::move(yystack_[0].value.as < std::string_view > ()); }
+  case 18: // commandname: STRING
+                     { yylhs.value.as < std::string_view > () = std::move(yystack_[0].value.as < std::string_view > ()); }
     break;
 
-  case 19: // commandname: IDENTIFIER "="
-                                            { yylhs.value.as < std::string_view > () = std::move(yystack_[1].value.as < std::string_view > ()); }
+  case 19: // commandname: STRING "="
+                      { yylhs.value.as < std::string_view > () = std::move(yystack_[1].value.as < std::string_view > ()); }
     break;
 
-  case 20: // commandname: IDENTIFIER ":"
-                                           { yylhs.value.as < std::string_view > () = std::move(yystack_[1].value.as < std::string_view > ()); }
+  case 20: // commandname: STRING ":"
+                     { yylhs.value.as < std::string_view > () = std::move(yystack_[1].value.as < std::string_view > ()); }
     break;
 
   case 21: // commanddecl: commandname parameters.0.N ";"
@@ -862,12 +862,12 @@ namespace neo {
                                                              { if (!_.skip()) yylhs.value.as < command > () = std::move(_.make_command(std::move(yystack_[2].value.as < std::string_view > ()), std::move(yystack_[1].value.as < command::parameters > ()), true)); else _.enter_skip_scope(); }
     break;
 
-  case 23: // instancedecl: "using" IDENTIFIER "<" list.0.N ">" ";"
-                                                                      { if (!_.skip()) yylhs.value.as < command_instance > () = std::move(_.make_instance(std::move(yystack_[4].value.as < std::string_view > ()), std::move(yystack_[2].value.as < command::param_t > ()))); }
+  case 23: // instancedecl: "using" STRING "[" list.0.N "]" ";"
+                                                                    { if (!_.skip()) yylhs.value.as < command_instance > () = std::move(_.make_instance(std::move(yystack_[4].value.as < std::string_view > ()), std::move(yystack_[2].value.as < command::param_t > ()))); }
     break;
 
-  case 24: // instancedecl: "using" IDENTIFIER "<" list.0.N ">" "{"
-                                                                                  { if (!_.skip()) yylhs.value.as < command_instance > () = std::move(_.make_instance(std::move(yystack_[4].value.as < std::string_view > ()), std::move(yystack_[2].value.as < command::param_t > ()), true)); }
+  case 24: // instancedecl: "using" STRING "[" list.0.N "]" "{"
+                                                                    { if (!_.skip()) yylhs.value.as < command_instance > () = std::move(_.make_instance(std::move(yystack_[4].value.as < std::string_view > ()), std::move(yystack_[2].value.as < command::param_t > ()), true)); }
     break;
 
   case 26: // parameters.0.N: parameter
@@ -888,7 +888,7 @@ namespace neo {
                                                                             { if (!_.skip()) { yystack_[3].value.as < command::parameters > ().append_expanded(std::move(yystack_[1].value.as < command::param_t > ())); yylhs.value.as < command::parameters > () = std::move(yystack_[3].value.as < command::parameters > ()); } }
     break;
 
-  case 30: // special_parameter: IDENTIFIER "=" parameter
+  case 30: // special_parameter: STRING "=" parameter
                         { 
 				if (!_.skip())
 				{
@@ -912,8 +912,8 @@ namespace neo {
 												}
     break;
 
-  case 32: // parameter: IDENTIFIER
-                                                            { if (!_.skip()) yylhs.value.as < command::param_t > () = command::single(std::move(yystack_[0].value.as < std::string_view > ())); }
+  case 32: // parameter: STRING
+                                      { if (!_.skip()) yylhs.value.as < command::param_t > () = command::single(std::move(yystack_[0].value.as < std::string_view > ())); }
     break;
 
   case 33: // parameter: "[" list.0.N "]"
@@ -1305,20 +1305,20 @@ namespace neo {
   }
 
 
-  const signed char parser_impl::yypact_ninf_ = -46;
+  const signed char parser_impl::yypact_ninf_ = -44;
 
   const signed char parser_impl::yytable_ninf_ = -1;
 
   const signed char
   parser_impl::yypact_[] =
   {
-       2,   -46,   -46,   -46,    -5,     9,    -7,   -46,    12,    -4,
-      36,     2,   -46,    24,   -46,   -46,    22,    41,    49,    55,
-     -46,   -46,   -46,   -46,   -46,     7,     7,   -46,   -46,    20,
-     -46,   -46,    29,    22,     7,   -46,    46,   -46,   -46,   -46,
-       1,    -6,   -46,   -46,     7,   -46,    40,    43,    42,    44,
-      26,   -46,     7,   -46,    38,   -46,   -46,    40,    52,   -46,
-     -46,   -46,   -46,   -46,   -46
+       2,   -44,   -44,   -44,    -5,   -11,     8,   -44,    12,    40,
+      38,     2,   -44,    24,   -44,   -44,    22,    44,    51,    55,
+     -44,   -44,   -44,   -44,   -44,     7,     7,   -44,   -44,    20,
+     -44,   -44,     1,    22,     7,   -44,    46,   -44,   -44,   -44,
+      29,    -6,   -44,   -44,     7,   -44,    43,    45,    41,    42,
+      26,   -44,     7,   -44,     0,   -44,   -44,    43,    52,   -44,
+     -44,   -44,   -44,   -44,   -44
   };
 
   const signed char
@@ -1336,7 +1336,7 @@ namespace neo {
   const signed char
   parser_impl::yypgoto_[] =
   {
-     -46,    50,   -46,    31,   -46,   -46,   -45,   -46,   -46,   -46,
+     -44,    49,   -44,    28,   -44,   -44,   -43,   -44,   -44,   -44,
      -13,    10,    -1
   };
 
@@ -1350,36 +1350,36 @@ namespace neo {
   const signed char
   parser_impl::yytable_[] =
   {
-      30,    55,     1,    16,    52,     2,    53,     3,    51,    21,
-      22,    52,    62,    25,    19,    17,    45,     4,     5,     6,
-       7,     8,     9,    42,    43,    41,    25,    36,    28,    18,
-      25,    44,    25,    49,    20,    26,    23,    59,    46,    47,
-      27,    28,    31,    54,    27,    28,    27,    28,    52,    33,
-      61,    57,    47,    58,    52,    63,    64,    34,    35,    50,
-       9,    24,    60,    56,    48
+      30,    16,     1,    55,    52,     2,    53,     3,    46,    18,
+      52,    47,    61,    25,    62,    17,    45,     4,     5,     6,
+       7,     8,     9,    42,    43,    41,    25,    36,    28,    19,
+      25,    44,    25,    49,    20,    26,    51,    59,    23,    52,
+      27,    28,    31,    54,    27,    28,    27,    28,    57,    58,
+      33,    47,    52,    21,    22,    63,    64,    34,    35,    50,
+      24,    48,    60,     9,     0,    56
   };
 
   const signed char
   parser_impl::yycheck_[] =
   {
-      13,    46,     0,     8,    10,     3,    12,     5,     7,    13,
-      14,    10,    57,     6,    21,    20,    29,    15,    16,    17,
-      18,    19,    20,     3,     4,    26,     6,    20,    21,    20,
-       6,    11,     6,    34,    22,    11,     0,    50,     9,    10,
-      20,    21,    20,    44,    20,    21,    20,    21,    10,     8,
-      12,     9,    10,     9,    10,     3,     4,     8,     3,    13,
-      20,    11,    52,    20,    33
+      13,     6,     0,    46,    10,     3,    12,     5,     7,    20,
+      10,    10,    12,     6,    57,    20,    29,    15,    16,    17,
+      18,    19,    20,     3,     4,    26,     6,    20,    21,    21,
+       6,    11,     6,    34,    22,    11,     7,    50,     0,    10,
+      20,    21,    20,    44,    20,    21,    20,    21,     7,     7,
+       6,    10,    10,    13,    14,     3,     4,     6,     3,    13,
+      11,    33,    52,    20,    -1,    20
   };
 
   const signed char
   parser_impl::yystos_[] =
   {
        0,     0,     3,     5,    15,    16,    17,    18,    19,    20,
-      24,    25,    27,    28,    29,    30,     8,    20,    20,    21,
+      24,    25,    27,    28,    29,    30,     6,    20,    20,    21,
       22,    13,    14,     0,    24,     6,    11,    20,    21,    31,
-      33,    20,    26,     8,     8,     3,    20,    32,    33,    34,
-      35,    35,     3,     4,    11,    33,     9,    10,    26,    35,
-      13,     7,    10,    12,    35,    29,    20,     9,     9,    33,
+      33,    20,    26,     6,     6,     3,    20,    32,    33,    34,
+      35,    35,     3,     4,    11,    33,     7,    10,    26,    35,
+      13,     7,    10,    12,    35,    29,    20,     7,     7,    33,
       34,    12,    29,     3,     4
   };
 
@@ -1411,8 +1411,8 @@ namespace neo {
   "\"end of file\"", "error", "\"invalid token\"", "\";\"", "\"{\"",
   "\"}\"", "\"[\"", "\"]\"", "\"<\"", "\">\"", "\",\"", "\"(\"", "\")\"",
   "\"=\"", "\":\"", "\"template\"", "\"using\"", "\"import\"", "REGION_ID",
-  "TEXT_REGION_ID", "IDENTIFIER", "STRING_LITERAL", "TEXT_CONTENTS",
-  "$accept", "script", "statement", "template_args.0.N", "templatedecl",
+  "TEXT_REGION_ID", "STRING", "STRING_LITERAL", "TEXT_CONTENTS", "$accept",
+  "script", "statement", "template_args.0.N", "templatedecl",
   "commandname", "commanddecl", "instancedecl", "parameters.0.N",
   "special_parameter", "parameter", "any_parameter", "list.0.N", YY_NULLPTR
   };

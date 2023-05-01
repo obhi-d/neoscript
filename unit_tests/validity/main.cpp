@@ -47,7 +47,7 @@ struct fileout_command_handler : public neo::command_handler
 
   neo::retcode print_m(neo::state_machine const& ctx, neo::command const& cmd)
   {
-    file << scope << cmd.name() << " --> (";
+    file << scope << "#" << cmd.name() << "# --> (";
     auto const& params = cmd.params().value();
     bool        first  = true;
     for (auto const& val : params)

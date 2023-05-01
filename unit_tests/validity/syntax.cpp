@@ -97,7 +97,7 @@ struct test_command_handler : public neo::command_handler
   std::string                                  output;
 };
 
-TEST_CASE("Scoped command", "[region0]")
+TEST_CASE("Code region with command", "[region0]")
 {
   neo::registry test_interpreter;
   std::string   test = "--code:Scoped-- \n"
@@ -114,6 +114,49 @@ TEST_CASE("Scoped command", "[region0]")
   state_machine.parse("memory", test);
   REQUIRE(!state_machine.fail_bit());
   REQUIRE(handler.output == "echo --> (Hello world)\n");
+}
+
+TEST_CASE("Code region with command and spaces", "[region0]")
+{
+  neo::registry test_interpreter;
+  std::string   test = "--code:Scoped-- \n"
+                     "  echo \"Hello world\"; \n";
+  
+  auto root = test_interpreter.ensure_region_root("Scoped");
+  test_interpreter.add_command(
+      root, "echo",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "echo --> (Hello world)\n");
+}
+
+TEST_CASE("Scoped command with spaces", "[region0]")
+{
+  neo::registry test_interpreter;
+  std::string   test =
+                     "scope \"Nice\" { \n"
+                     "\t echo \"Hello world\"; } \n";
+  
+
+  auto scope = test_interpreter.add_scoped_command(test_interpreter.root, "scope",
+                                      [](neo::command_handler* _, neo::state_machine const& ctx,
+                                         neo::command const& cmd) noexcept -> neo::retcode
+                                      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_interpreter.add_command(
+      scope, "echo",
+      [](neo::command_handler* _, neo::state_machine const& ctx,
+         neo::command const& cmd) noexcept -> neo::retcode
+      { return static_cast<test_command_handler*>(_)->generate(ctx, cmd); });
+  test_command_handler handler;
+  neo::state_machine   state_machine(test_interpreter, &handler, 0);
+  state_machine.parse("memory", test);
+  REQUIRE(!state_machine.fail_bit());
+  REQUIRE(handler.output == "scope --> (Nice)\necho --> (Hello world)\n");
 }
 
 TEST_CASE("Text region", "[textregion1]")

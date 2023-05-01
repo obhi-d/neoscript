@@ -1,2 +1,2 @@
-template Decl<One,Two,Three,Four> Command One Two [Three,Four] (Five="Not a template param");
+$Decl[One,Two,Three,Four] Command One Two [Three,Four] (Five="Not a template param");
 
