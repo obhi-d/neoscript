@@ -25,8 +25,8 @@ void   neo_free (void * ptr, void * yyscanner);
 
 %x STATE_REGION STATE_REGION_TEXT STATE_REGION_CODE STATE_TEXT STATE_STR STATE_CONTENT STATE_COMMENT STATE_SINGLE_LINE_COMMENT
 
-REG     [a-zA-Z#_$:\-\.]+
-REGND   [a-zA-Z#_$\-\.]+
+REG     [a-zA-Z#_$:\.]+
+REGND   [a-zA-Z#_$\.]+
 BLANK   [ \t\r]
 %%
 
@@ -80,7 +80,7 @@ BLANK   [ \t\r]
 }
 
 <INITIAL,STATE_CONTENT>{
-^\{\{                              BEGIN(STATE_REGION); _.skip_len(2);
+^--                                BEGIN(STATE_REGION); _.skip_len(2);
 "/*"                               BEGIN(STATE_COMMENT); _.skip_len(2);
 "//"                               BEGIN(STATE_SINGLE_LINE_COMMENT); _.skip_len(2);
 "{"                                _.skip_len(1); return neo::parser_impl::make_LBRACKET(_.loc());
@@ -125,7 +125,7 @@ BLANK   [ \t\r]
 
 <STATE_REGION_TEXT,STATE_REGION_CODE>{
 
-\}\}  {
+--  {
 	auto value = _.make_token();
 	_.skip_len(yyleng);
 	if (YY_START == STATE_REGION_CODE) {

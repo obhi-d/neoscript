@@ -7,9 +7,9 @@ option(NEOSCRIPT_BUILD_TESTS      "Build the unit tests when BUILD_TESTING is en
 option(NEOSCRIPT_BUILD_STATIC     "Build as static lib."                                ON)
 option(NEOSCRIPT_HEADER_ONLY      "Header only build."                                  OFF)
 option(NEOSCRIPT_USE_LIBCPP_CLANG "Use libc++ for clang"                                ON)
-option(NEOSCRIPT_USE_PRE_GENERATED_PARSERS "Use already generated parsers"                       ON)
+option(NEOSCRIPT_USE_PRE_GENERATED_PARSERS "Use already generated parsers"              ON)
 set   (NEOSCRIPT_BISON            "bison"                                               CACHE STRING "Bison execuatable")
-set   (NEOSCRIPT_FLEX              "flex"                                                CACHE STRING "Flex executable"  )
+set   (NEOSCRIPT_FLEX             "flex"                                                CACHE STRING "Flex executable"  )
 
 ##
 ## CONFIGURATION

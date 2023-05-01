@@ -1,5 +1,5 @@
 
-{{code:simple.script}}
+-- code : simple.script --
 
 command testp1 testp2;
  
